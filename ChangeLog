@@ -1,3 +1,179 @@
+2004-05-03  Vadim Konovalov <vkonovalov@peterstar.ru>
+
+	* MANIFEST: demos/demo-w-tix.pl removed, tk-demos reorganization
+	* demos/demo-w-tix.pl(removed): obsoleted code
+	* typemap(removed): remove C support file
+	* demos/multiwidget.pl: DEBUG off
+	* demos/tcltkdb.pm: fix tcltkdb demo
+	* lib/Tcl/Tk.pm:   many perlTk compatibility changes, Scrollbar,
+	Scale widgets, 'iconname' method, some 'Menu' additions
+	(widget): allow widget names not starting with dot
+	* tk-demos/*: delete old and import new code, borrowed and adopted
+	from perlTk distribution
+	* Changes: brief summary for version 0.80
+
+2004-04-29  Jeff Hobbs  <jeffh@ActiveState.com>
+
+	* MANIFEST: Updated to note removal of Tk.xs
+	* Makefile.PL:     Remove the C component of Tcl::Tk as it is no
+	* Tk.xs (removed): longer necessary.
+	* lib/Tcl/Tk.pm:   Change new to package require Tk, which goes
+	through Tcl to find Tk, instead of forcing us to link to it.  Move
+	MainLoop to Tk.pm using Tcl's DoOneEvent, until '.' is deleted.
+	(new): Use SetVar to set Tk's 'argv' directly.
+	Jump version to 0.80 to coincide with Tcl module again, which it
+	is reliant on (DoOneEvent was newly added).
+
+2004-04-27    Gisle Aas  <gisle@ActiveState.com>
+
+	* t/ptk-compat.t: Append the t/perltk-compat.t tests and get
+	rid t/perltk-compat.t.  Only t/ptk-compat.t is in MANIFEST.
+
+2004-04-26  Jeff Hobbs  <jeffh@ActiveState.com>
+
+	* t/perltk-compat.t: removed todo
+	* lib/Tcl/Tk.pm (AUTOLOAD winfo children): map children back to
+	widget objects
+
+	* lib/Tcl/Tk.pm (new, declare_widget, widget, ...): complete
+	revamp of the way object references are returned.  Where we used
+	to have %wint (path-keyed index to interp) and %w (scalar ref to
+	path), we now have one package-global %W that is an object hash
+	that is path-keyed, containing PATH and INT elements.  This allows
+	for other object instance data to be stored.  Clean-up is not yet
+	handled, but that's an issue throughout Tk.
+	(DialogBox): correctly use of object instance data for perl-side
+	options on dialog boxes.
+	($mwpath, w_uniq): allow correct '.' in $mwpath by checking in
+	w_uniq that we don't get double-'..xxx' paths.
+
+2004-04-26  Gisle Aas  <gisle@ActiveState.com>
+
+	* lib/Tcl/Tk.pm: Don't redirect exists calls to winfo,
+	as this hides any exists subcommand for the widget.
+
+2004-04-26  Vadim Konovalov  <vkonovalov@peterstar.ru>
+
+	* lib/Tcl/Tk.pm: perlTk compatibility: DirTree Tix widget
+
+2004-04-24  Vadim Konovalov  <vkonovalov@peterstar.ru>
+
+	* lib/Tcl/Tk.pm: perlTk compatibility: sub PathName,
+	Exists, class, toplevel, parent, *all* winfo methods.
+	Balloon widget moved to file Tcl/Tk/Widget/Balloon.pm
+	* demos/tcltkdb.pm: Tcl::Tk compatibility fixes.
+	* Tcl/Tk/Widget/Balloon.pm: file added.
+	* MANIFEST: Tcl/Tk/Widget/Balloon.pm added
+
+2004-04-23  Jeff Hobbs  <jeffh@ActiveState.com>
+
+	* lib/Tcl/Tk.pm (Declare): add ability to declare (or alter)
+	widgets available.  Use like:
+	Tcl::Tk::Widget::Declare('Progressbar', 'tile::progress',
+	-prefix => 'pbar', -require => 'tile', -command => '');
+	This creates an entry in the ptk2tcltk hash.
+	(need_tk): rework to take 2 args - proper Tcl package name, and
+	option command for instantiation of items.
+
+2004-04-24  Vadim Konovalov  <vkonovalov@peterstar.ru>
+
+	* lib/Tcl/Tk.pm: perlTk compatibility: sub findINC;
+	improve support for Tix's geometry manager 'form' for '&';
+	widgets BrowseEntry, TList, suppress -overanchor for toplevel.
+
+2004-04-22  Jeff Hobbs  <jeffh@ActiveState.com>
+
+	* lib/Tcl/Tk.pm (DialogBox): add default Return and Escape
+	bindings and note that Show method is currently flawed in its
+	usage of $popover and $defbtn.
+
+2004-04-22  Vadim Konovalov  <vkonovalov@peterstar.ru>
+
+	* lib/Tcl/Tk.pm: small change in 'widget' method explanation;
+	remove tkpack, tkbind.
+	(Exists): change $interp->call(...) to $interp->icall(...)
+	* demos/demo.pl: tkpack removed; Needs to be better demo here!
+	* demos/activex.pl: tkpack, tkbind removed; Needs improvements.
+	* tk-demos/widget.pl: tkpack, tkbind adopted; must rewrite
+	according to newer syntax.
+	* t/ptk-compat.t: plan test => 2
+
+2004-04-22  Gisle Aas <gisle@ActiveState.com>
+
+	* t/optmenu.t: Make it pass by replacing Tk::Exists with
+	Tcl::Tk::Exist.
+
+2004-04-21  Jeff Hobbs  <jeffh@ActiveState.com>
+
+	* lib/Tcl/Tk.pm (DialogBox): correct wid refs in object methods.
+	(LabFrame): correct wid refs in object methods.
+
+	* Makefile.PL: use TK_XINCLUDES to find X headers when using
+	--tclconfig.  TK_INCLUDE_SPEC is spurious - it's already handled
+	by TCL_INCLUDE_SPEC and actually does not exist.
+
+	* lib/Tcl/Tk.pm (ROText): make sure to reference proper ROText
+	instance in widget methods.
+
+2004-04-21  Gisle Aas <gisle@ActiveState.com>
+
+	* lib/Tcl/Tk.pm: Make the 'raise' method work for Widgets for
+	PerlTk compatibility.
+	* t/perltk-compat.t: test raise.  Added todo test for children.
+
+2004-04-20  Jeff Hobbs  <jeffh@ActiveState.com>
+
+	* lib/Tcl/Tk.pm (Menubutton): use cheaper "$$wid.m" instead of
+	$wid-path.".m" reference.
+	(DEBUG): modified to accept optional level and message args.
+	Rewrite use of DEBUG throughout Tk.pm.
+	(Menu): remove Carp::cluck.
+	(::VTEMP): change to package prefaced Tcl::Tk::VTEMP
+	(create_widget_package): add created packages to ptk_w_names so
+	they are recognized in AUTOLOADing.
+	(AUTOLOAD): remove 'o'nce flags from package/method RE separation.
+
+2004-04-21  Vadim Konovalov  <vkonovalov@peterstar.ru>
+
+	* lib/Tcl/Tk.pm: fix Tcl::Tk::Widget::MultipleWidget bug;
+	Make Menu, Menubutton to properly behave in their own packages;
+	* t/ptk-compat.t: added very first check for perlTk, misbehaves;
+	* MANIFEST: reflect adding t/ptk-compat.t
+
+2004-04-20  Gisle Aas <gisle@ActiveState.com>
+
+	* lib/Tcl/Tk.pm: Make the 'bell' method work for Widgets for
+	PerlTk compatibility.
+
+2004-04-19  Vadim Konovalov  <vkonovalov@peterstar.ru>
+
+	* lib/Tcl/Tk.pm: declare Menu as widget (otherwise AUTOLOAD
+	does not recognize it)
+
+2004-04-19  Vadim Konovalov  <vkonovalov@peterstar.ru>
+
+	* META.yml: fix according to perl-authors ML advice
+
+2004-04-19  Gisle Aas <gisle@ActiveState.com>
+
+	* Tk.xs: Cleanup; Should not put Tk_Init into the Tcl namespace.
+	Removed unused CreateMainWindow stub.
+	* lib/Tcl/Tk.pm: Now need SUPER::Init to get to Tcl_Init.
+	Removed CreateMainWindow reference.
+
+2004-04-19  Vadim Konovalov  <vkonovalov@peterstar.ru>
+
+	* lib/Tcl/Tk.pm: correct typo in comment; fix 'wantarray' error
+	similar to one fixed in Tcl.pm
+
+2004-04-18  Vadim Konovalov  <vkonovalov@peterstar.ru>
+
+	* lib/Tcl/Tk.pm: cosmetic changes.
+
+2004-04-17  Vadim Konovalov  <vkonovalov@peterstar.ru>
+
+	* lib/Tcl/Tk.pm: corrected typo in perlTk compatibility
+
 2004-04-17  Vadim Konovalov  <vkonovalov@peterstar.ru>
 
 	* Makefile.PL: fix WinCE case; require Tcl.pm version 0.76

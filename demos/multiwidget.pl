@@ -1,7 +1,6 @@
 
 use strict;
 use Tcl::Tk qw/:perlTk/;
-BEGIN {$::Tcl::Tk::DEBUG=3}
 
 my $mw = MainWindow->new;
 

@@ -4,12 +4,12 @@
 #####################################################
 
 use strict;
-use Tcl::Tk qw(:widgets :misc);
+use Tcl::Tk qw(:widgets);
 
 my $interp = new Tcl::Tk;
 
 # in case we want to do some debugging
-tkbind '.', '<F2>', 'console show';
+$interp->bind('.', '<F2>', 'console show');
 
 my $t = text(".t", -height=>1, -width=>20,-font => "-*-Arial Unicode MS--R---*-350-*-*-*-*-*-*")->pack;
 $t->insert("end", "thishishis\x{5678}\x{265c}\x{265d}\x{265e}\x{2345}\x{2346}\x{2347}");
@@ -31,7 +31,7 @@ my ($wcal, $acal) = new_activex('.cal', 'MSCAL.Calendar');
 my ($wcombo,$acombo) = new_activex('.acombo', 'Forms.ComboBox.1');
 my ($wspin,$aspin) = new_activex('.aspin', 'Forms.SpinButton.1');
 
-tkpack ".cal", ".acombo", ".aspin";
+$interp->pack(".cal", ".acombo", ".aspin");
 
 #$wcal->config(qw/-width 300 -height 300/);
 #$wcombo->configure(qw/-width 300 -height 20/);
@@ -45,5 +45,4 @@ $interp->call($acombo, ':', 'Text', 'Bla-bla-bla-bla');
 #button ".b", -text=>'TypeInfo', -command=>{tlview::viewtype [optcl::class $cal]}
 #pack .b -side bottom -anchor se
 
-MainLoop;
-
+$interp->MainLoop;

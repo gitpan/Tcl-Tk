@@ -13,7 +13,7 @@ use Tcl::Tk qw/:perlTk/;
 my $mw;
 eval {$mw = MainWindow->new();};
 ok($@, "", "can't create MainWindow");
-ok(Tk::Exists($mw), 1, "MainWindow creation failed");
+ok(Tcl::Tk::Exists($mw), 1, "MainWindow creation failed");
 
 my $foo = 12;
 my @opt = (0..20);
@@ -22,7 +22,7 @@ my @opt = (0..20);
 my $opt = $mw->Optionmenu(-variable => \$foo,
 	                  -options => \@opt)->pack;
 ok($@, "", "can't create Optionmenu");
-ok(Tk::Exists($opt), 1, "Optionmenu creation failed");
+ok(Tcl::Tk::Exists($opt), 1, "Optionmenu creation failed");
 
 ok($ {$opt->cget(-variable)}, $foo, "setting of -variable failed");
 ok($opt->cget(-variable),\$foo, "Wrong variable");

@@ -4,11 +4,8 @@ version_from: lib/Tcl/Tk.pm
 installdirs:  site
 requires:
   Tcl: 0.76
-index:
-  file:
-  - lib/Tcl/Tk.pm
-no_index:
-  dir:
+private:
+  directory:
   - demos
   - tk-demos
 keywords:

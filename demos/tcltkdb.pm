@@ -1947,7 +1947,7 @@ sub setup_breakpts_page {
   $self->{'breakpts_page'} = $self->{'notebook'}->add("brkptspage", -label => "BrkPts") ;
 
   #TODO $self->{'breakpts_table'} = $self->{'breakpts_page'}->Table(-columns => 1, -scrollbars => 'se')->
-  $self->{'breakpts_table'} = $self->{'breakpts_page'}->Table(-columns => 1)-> 
+  $self->{'breakpts_table'} = $self->{'breakpts_page'}->Table(-columns => 1, -rows=>30, -colstretchmode=>'all',-rowheight=>3,-resizeborders=>'both', -bd=>1)-> 
       pack(-side => 'top', -fill => 'both', -expand => 1
            )   ;
 
@@ -2109,14 +2109,14 @@ sub configure_text {
   $txt->tagConfigure("breaksetLine", -background => $mw->optionGet("breaktagcolor", "background") || $ENV{'PTKDB_BRKPT_COLOR'} || 'red') ;
   $txt->tagConfigure("breakdisabledLine", -background => $mw->optionGet("disabledbreaktagcolor", "background") || $ENV{'PTKDB_DISABLEDBRKPT_COLOR'} || 'green') ;
   
-  $txt->tagBind("breakableLine", '<Button-1>', \\'@', sub {Devel::tcltkdb::set_breakpoint_tag($self, Tcl::Ev('@'), 1 )}  ) ;
-  $txt->tagBind("breakableLine", '<Shift-Button-1>', \\'@', sub { Devel::tcltkdb::set_breakpoint_tag($self, Tcl::Ev('@'), 0 )}  ) ;
+  $txt->tagBind("breakableLine", '<Button-1>', [sub {my ($x,$y,@rest)=@_;Devel::tcltkdb::set_breakpoint_tag($txt,$self, "\@$x,$y", 1 )} , Tcl::Ev('%x','%y')]) ;
+  $txt->tagBind("breakableLine", '<Shift-Button-1>', [sub {my ($x,$y,@rest)=@_; Devel::tcltkdb::set_breakpoint_tag($txt,$self, "\@$x,$y", 0 )} , Tcl::Ev('%x','%y')] ) ;
   
-  $txt->tagBind("breaksetLine", '<Button-1>',  \\'@', sub { Devel::tcltkdb::clear_breakpoint_tag($self, Tcl::Ev('@') )}  ) ;
-  $txt->tagBind("breaksetLine", '<Shift-Button-1>',  \\'@', sub { Devel::tcltkdb::change_breakpoint_tag( $self, Tcl::Ev('@'), 0 )}  ) ;
+  $txt->tagBind("breaksetLine", '<Button-1>',  [sub {my ($x,$y,@rest)=@_; Devel::tcltkdb::clear_breakpoint_tag($txt,$self, "\@$x,$y")} , Tcl::Ev('%x','%y') ]) ;
+  $txt->tagBind("breaksetLine", '<Shift-Button-1>',  [sub {my ($x,$y,@rest)=@_; Devel::tcltkdb::change_breakpoint_tag($txt, $self, "\@$x,$y", 0 )}  , Tcl::Ev('%x','%y')]) ;
   
-  $txt->tagBind("breakdisabledLine", '<Button-1>', \\'@', sub { Devel::tcltkdb::clear_breakpoint_tag( $self, Tcl::Ev('@') )}  ) ;
-  $txt->tagBind("breakdisabledLine", '<Shift-Button-1>', \\'@', sub { Devel::tcltkdb::change_breakpoint_tag( $self, Tcl::Ev('@'), 1) }  ) ;
+  $txt->tagBind("breakdisabledLine", '<Button-1>', [sub {my ($x,$y,@rest)=@_; Devel::tcltkdb::clear_breakpoint_tag($txt, $self, "\@$x,$y")}  , Tcl::Ev('%x','%y')]) ;
+  $txt->tagBind("breakdisabledLine", '<Shift-Button-1>', [sub {my ($x,$y,@rest)=@_; Devel::tcltkdb::change_breakpoint_tag($txt, $self, "\@$x,$y", 1) } , Tcl::Ev('%x','%y') ]) ;
   
 } # end of configure_text
 
@@ -2306,12 +2306,12 @@ sub add_brkpt_to_brkpt_page {
   $btn = $lowerFrame->Entry(-textvariable => \$brkPt->{'expr'}) ;
   $btn->pack(-side => 'left', -fill => 'x', -expand => 1) ;
   
-  $frm->pack(-side => 'top', -fill => 'x', -expand => 1) ;
+  #$frm->pack(-side => 'top', -fill => 'x', -expand => 1) ;
 
   $row = pop @{$self->{'brkPtSlots'}} or $row = $self->{'brkPtCnt'} ;
 
   #orig -- TODO $self->{'breakpts_table'}->put($row, 1, $frm) ;
-  $self->{'breakpts_table'}->set($row, 1, $frm) ;
+  $self->{'breakpts_table'}->windowConfigure(($row-1).",0", -sticky=>'news', -window=>$frm) ;
   
   $self->{'breakpts_table_data'}->{"$fname:$index"}->{'frm'} = $frm ;
   $self->{'breakpts_table_data'}->{"$fname:$index"}->{'row'} = $row ;
@@ -2334,7 +2334,8 @@ sub remove_brkpt_from_brkpt_page {
 
   # Delete the breakpoint control in the breakpoints window
 
-  $table->put($self->{'breakpts_table_data'}->{"$fname:$idx"}->{'row'}, 1) ; # delete?
+  #$table->put($self->{'breakpts_table_data'}->{"$fname:$idx"}->{'row'}, 1) ; # delete?
+  $table->windowDelete(($self->{'breakpts_table_data'}->{"$fname:$idx"}->{'row'}-1).',0' ) ; # delete?
 
   #
   # Add this now empty slot to the list of ones we have open
@@ -4288,8 +4289,8 @@ sub DB {
 1 ; # return true value
 
 # $Log: tcltkdb.pm,v $
-# Revision 1.2  2004/04/04 22:23:34  vkonovalov
-# made some ptkdb::xxx=>tcltkdb changes to unfrustrate indexer
+# Revision 1.3  2004/04/24 13:52:37  vkonovalov
+# 	* demos/tcltkdb.pm: Tcl::Tk compatibility fixes.
 #
 # Revision 1.1  2004/03/22 23:59:56  hobbs2
 # VKON 0.74 release update snapshot

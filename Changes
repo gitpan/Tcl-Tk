@@ -1,5 +1,13 @@
 Revision history for Perl extension Tcl::Tk.
 
+0.80    03-may-2004
+	- Tcl::Tk module is now pure-perl module; will be part of 'Tcl'
+	  module
+	- tk-demos, demos directories updated
+	- added few more tests
+	- many improvements in perlTk compatibility code: more widgets,
+	  more supported functions, so on.
+
 0.77	17-apr-2004
 	- many changes from Jeff Hobbs, Gisle Aas, Vadim Konovalov
 	for perlTk compatibility, better structured objects, widgets.
