@@ -119,8 +119,8 @@ sub menus {
 
     my $i = $menubar->cascade(-label => '~Icons', -tearoff => 0);
     $i->command(
-        -bitmap => '@'.Tk->findINC('demos/images/pattern'),
-	-command => [$DIALOG_ICON => 'Show'],
+        -bitmap => '@'.'./images/pattern.bmp',
+        -command => sub{$DIALOG_ICON -> Show},
 	-hidemargin => 1,
     );
     foreach $label (qw/info questhead error/) {
@@ -156,10 +156,13 @@ sub menus {
     $TOP->Label(qw/-relief sunken -borderwidth 1 -anchor w/,
 		-font => 'Helvetica 10', -textvariable => \$status_bar)->
 		    pack(qw/-padx 2 -pady 2 -expand yes -fill both/);
-    $menubar->bind('<<MenuSelect>>' => sub {
+    $menubar->bind('<<MenuSelect>>' => \\'W', sub {
 	my $label = undef;
-	my $w = $Tk::event->W;
-	$label = $w->entrycget('active', -label);
+	my $w = Tcl::Tk::widget(pop); # $Tk::event->W;
+	eval {
+	    $label = $w->entrycget('active', -label);
+        };
+	if ($@) {$label = "   "}
 	$status_bar = $label;
 	$TOP->idletasks;
     });
@@ -174,7 +177,7 @@ sub menus_error {
     my($msg) = @_;
 
     $msg = "This is just a demo: no action has been defined for \"$msg\".";
-    $TOP->BackTrace($msg);
+    warn $msg;
 
 } # end menus_error
 

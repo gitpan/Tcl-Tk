@@ -6,7 +6,7 @@ use Exporter;
 use vars qw(@ISA @EXPORT_OK %EXPORT_TAGS);
 @ISA = qw(Exporter Tcl);
 
-$Tcl::Tk::VERSION = '0.82';
+$Tcl::Tk::VERSION = '0.84';
 
 # For users that want to ensure full debugging from initial use call,
 # including the checks for other Tk modules loading following Tcl::Tk
@@ -271,6 +271,17 @@ path like '.f.b02' and will assign this button into $btn.
 This syntax is very similar to syntax for perlTk. Some perlTk program even
 will run unmodified with use of Tcl::Tk module.
 
+=head3 C<widget_data> method
+
+If you need to associate any data with particular widget, you can do this with 
+C<widget_data> method of either interpreter or widget object itself. This method
+returns same anonymous hash and it should be used to hold any keys/values pairs.
+
+Examples:
+
+  $interp->widget_data('.fram1.label2')->{var} = 'value';
+  $label->widget_data()->{var} = 'value';
+
 =head2 Non-widget Tk commands
 
 For convenience, the non-widget Tk commands (such as C<destroy>,
@@ -439,7 +450,7 @@ sub declare_widget {
     my $w = bless(\$id, 'Tcl::Tk::Widget');
     $Wpath->{$id} = $path; # widget pathname
     $Wint->{$id}  = $int; # Tcl interpreter
-    $W{RPATH}->{$path} = 1; # to prohibit repeteated widget names
+    $W{RPATH}->{$path} = $w;
     # TODO find a better way to avoid repeated names
     return $w;
 }
@@ -582,14 +593,15 @@ sub awidgets {
 sub widget($@) {
     my $int = (ref $_[0]?shift:$tkinterp);
     my $wpath = shift;
-    if (exists $Wpath->{$wpath}) {
-        return $Wpath->{$wpath};
+    if (exists $W{RPATH}->{$wpath}) {
+        return $W{RPATH}->{$wpath};
     }
     # We could ask Tcl about it by invoking
     # my @res = $int->Eval("winfo exists $wpath");
     # but we don't do it, as long as we allow any widget paths to
     # be used by user.
-    return $int->declare_widget($wpath);
+    my $w = $int->declare_widget($wpath);
+    return $w;
 }
 sub Exists($) {
     my $wid = shift;
@@ -801,6 +813,11 @@ sub place {
     $self->interp->call("place",$self,@_);
     $self;
 }
+sub lower {
+    my $self = shift;
+    $self->interp->call("lower",$self,@_);
+    $self;
+}
 # helper sub _bind_widget_helper inserts into subroutine callback
 # widget as parameter
 sub _bind_widget_helper {
@@ -854,7 +871,13 @@ sub bind {
 	}
     }
     else {
-	$self->interp->call("bind",$self->path,@_);
+	if ($_[0] =~ /^</) {
+	    # A sequence was specified - assume path from widget instance
+	    $self->interp->call("bind",$self->path,@_);
+	} else {
+	    # Not a sequence as first arg - don't assume path
+	    $self->interp->call("bind",@_);
+	}
     }
 }
 sub tag {
@@ -1114,7 +1137,7 @@ sub Getimage {
 	next unless -f $path;
 	DEBUG(2, "Getimage: FOUND IMAGE $path\n");
 	if ($ext eq "xpm") {
-	    $int->need_tk('Img');
+	    $int->need_tk('img::xpm');
 	}
 	my @args = ('image', 'create', $image_formats{$ext}, -file => $path);
 	if ($image_formats{$ext} ne "bitmap") {
@@ -1286,9 +1309,6 @@ sub create_ptk_widget_sub {
     $wpref ||= lcfirst $wtype;
 
     if ($tpkg) { $tkinterp->need_tk($tpkg,$tcmd); }
-    # we need a way to better handle dependencies for "managed" widgets
-    elsif ($wtype eq 'Photo')      { $tkinterp->need_tk('Img'); }
-    elsif ($wtype eq 'Tree')       { $tkinterp->need_tk('Tix'); }
 
     if ($ttktype =~ s/^\*perlTk\///) {
 	# should create pure-perlTk widget and bind it to Tcl variable so that
@@ -1503,7 +1523,7 @@ sub Menubutton {
 	    my $wid = shift;
 	    my $int = $wid->interp;
 	    if ($_[0] eq "-menu") {
-		return $int->widget("$wid");
+		return $int->widget($int->invoke("$wid",'cget','-menu'));
 	    } else {
 		DEBUG(2, "CALL $wid cget @_\n");
 		die "Finish cget implementation for Menubutton";
@@ -1718,7 +1738,11 @@ sub Photo {
     my $self = shift; # this will be a parent widget for newer Photo
     my $int = $self->interp;
     my $w    = w_uniq($self, "pht"); # return unique widget id
-    $int->need_tk('Img');
+    # XXX Do we really want to require all of 'Img' here?  Perhaps the
+    # XXX requirement on Img should be pushed to the user level, or only
+    # XXX require those formats that Perl/Tk auto-supported (jpeg, ???)
+    # VK how differents format should be differentiated? TBD
+    #$int->need_tk('Img');
     my $bw = $int->declare_widget($int->call('image','create', 'photo', @_));
     create_widget_package('Photo');
     bless $bw, "Tcl::Tk::Widget::Photo";
@@ -1728,7 +1752,6 @@ sub Bitmap {
     my $self = shift; # this will be a parent widget for newer Bitmap
     my $int = $self->interp;
     my $w    = w_uniq($self, "bmp"); # return unique widget id
-    $int->need_tk('Img');
     my $bw = $int->declare_widget($int->call('image','create', 'bitmap', @_));
     create_widget_package('Bitmap');
     bless $bw, "Tcl::Tk::Widget::Bitmap";

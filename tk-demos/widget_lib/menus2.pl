@@ -102,19 +102,20 @@ sub menus2 {
     # radiobutton cascade menus and invoke a few menu items.
 
     my $cm = $c->cget(-menu);
+    my @cm = $c->cget(-menu);
     $menu_cb = substr $menu_cb, 1;
-    my $cc = $cm->entrycget($menu_cb, -menu);
+    my $cc = Tcl::Tk::widget($cm->entrycget($menu_cb, -menu));
     $cc->invoke(1);
     $cc->invoke(3);
     $menu_rb = substr $menu_rb, 1;
-    my $cr = $cm->entrycget($menu_rb, -menu);
+    my $cr = Tcl::Tk::widget($cm->entrycget($menu_rb, -menu));
     $cr->invoke(1);
     $cr->invoke(7);
 
     my $i = $menubar->Menubutton(qw/-text Icons -underline 0 -menuitems/ =>
         [
-	 [Button   => '', -bitmap => '@'.Tk->findINC('demos/images/pattern'),
-	  -command => [$DIALOG_ICON => 'Show']],
+	 [Button   => '', -bitmap => '@'.'./images/pattern.bmp',
+	 -command => sub{$DIALOG_ICON -> Show}],
 	 map (
 	      [Button  => '', -bitmap => $_,
 	      -command =>
@@ -158,7 +159,7 @@ sub menus_error2 {
     my($msg) = @_;
 
     $msg = "This is just a demo: no action has been defined for \"$msg\".";
-    $TOP->BackTrace($msg);
+    warn $msg;
 
 } # end menus_error
 

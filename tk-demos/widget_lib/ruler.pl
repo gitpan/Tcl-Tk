@@ -28,17 +28,18 @@ sub ruler {
     $rinfo{bottom} = $c->fpixels('1.5c');
     $rinfo{size} = $c->fpixels('.2c');
     $rinfo{normalStyle} = [qw/-fill black/];
+    my $tk_demoDirectory = '.'; # TODO should be calculated!
     if ($TOP->depth > 1) {
 	$rinfo{activeStyle} = [qw/-fill red -stipple/ => undef];
 	$rinfo{deleteStyle} = [
             -fill    => 'red',
-	    -stipple => '@'.Tk->findINC('demos/images/grey.25'),
+	    -stipple => "\@$tk_demoDirectory/images/gray25.bmp",
         ];
     } else {
 	$rinfo{activeStyle} = [qw/-fill black -stipple/ => undef];
 	$rinfo{deleteStyle} = [
             -fill    => 'black',
-            -stipple => '@'.Tk->findINC('demos/images/grey.25'),
+            -stipple => "\@$tk_demoDirectory/images/gray25.bmp",
         ];
     }
 
@@ -57,10 +58,10 @@ sub ruler {
     $c->addtag('well', 'withtag', ruler_make_tab($c, $c->pixels('13.5c'),
         $c->pixels('.65c'), \%rinfo));
 
-    $c->bind('well', '<1>' => [\&ruler_new_tab, \%rinfo]);
-    $c->bind('tab', '<1>' => [\&ruler_select_tab, \%rinfo]);
-    $c->Tk::bind('<B1-Motion>' => [\&ruler_move_tab, \%rinfo]);
-    $c->Tk::bind('<Any-ButtonRelease-1>', [\&ruler_release_tab, \%rinfo]);
+    $c->bind('well', '<1>' => [\&ruler_new_tab, Tcl::Ev('%x','%y'), \%rinfo]);
+    $c->bind('tab', '<1>' => [\&ruler_select_tab, Tcl::Ev('%x','%y'), \%rinfo]);
+    $c->interp->call('bind',$c,'<B1-Motion>' => [\&ruler_move_tab, Tcl::Ev('%x','%y'), $c, \%rinfo]);
+    $c->interp->call('bind',$c,'<Any-ButtonRelease-1>', [\&ruler_release_tab, $c, \%rinfo]);
 
 } # end ruler
 
@@ -75,11 +76,12 @@ sub ruler_make_tab {
 
 sub ruler_move_tab {
 
+    my($x, $y) = (shift,shift);
     my($c, $rinfo) = @_;
 
     return if not defined $c->find('withtag', 'active');
-    my $e = $c->XEvent;
-    my($x, $y) = ($e->x, $e->y);
+    #my $e = $c->XEvent;
+    #my($x, $y) = ($e->x, $e->y);
     my $cx = $c->canvasx($x, $rinfo->{grid});
     my $cy = $c->canvasy($y);
     if ($cx < $rinfo->{left}) {
@@ -103,15 +105,16 @@ sub ruler_move_tab {
 
 sub ruler_new_tab {
 
+    my($x, $y) = (shift,shift);
     my($c, $rinfo) = @_;
 
-    my $e = $c->XEvent;
-    my($x, $y) = ($e->x, $e->y);
+    #my $e = $c->XEvent;
+    #my($x, $y) = ($e->x, $e->y);
     $c->addtag('active', 'withtag', ruler_make_tab($c, $x, $y, $rinfo));
     $c->addtag('tab', 'withtag', 'active');
     $rinfo->{'x'} = $x;
     $rinfo->{'y'} = $y;
-    ruler_move_tab($c, $rinfo);
+    ruler_move_tab($x,$y,$c, $rinfo);
 
 } # end ruler_new_tab
 
@@ -131,10 +134,11 @@ sub ruler_release_tab {
 
 sub ruler_select_tab {
 
+    my($x, $y) = (shift,shift);
     my($c, $rinfo) = @_;
 
-    my $e = $c->XEvent;
-    my($x, $y) = ($e->x, $e->y);
+    #my $e = $c->XEvent;
+    #my($x, $y) = ($e->x, $e->y);
     $rinfo->{'x'} = $c->canvasx($x, $rinfo->{grid});
     $rinfo->{'y'} = $rinfo->{top} + 2;
     $c->addtag('active', 'withtag', 'current');

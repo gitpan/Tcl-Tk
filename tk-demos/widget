@@ -25,21 +25,23 @@ $MW->Declare('WidgetDemo','toplevel');
     package Tcl::Tk::Widget;
     sub WidgetDemo {
 	# pTk DialogBox compat sub
-	# XXX: This is not complete, needs to handle additional options
+	# XXX This is not complete, needs to handle additional options
 	my $self = shift; # this will be a parent widget for newer DialogBox
 	my $int  = $self->interp;
 	my $wn    = w_uniq($self, "dlgbox"); # return unique widget id
 	my %args = @_;
-	my $demo  = $int->declare_widget($int->call('toplevel', $wn,
+	my $tl_demo  = $int->declare_widget($int->call('toplevel', $wn,
 						   -class => "WidgetDemo"));
-	#$demo->withdraw();
-	$demo->title($args{'-title'} || "Unknown Demo Name");
+	my $demo  = $tl_demo->Frame();
+	#$tl_demo->withdraw();
+	$tl_demo->title($args{'-title'} || "Unknown Demo Name");
 	my $topparent = $int->call('winfo', 'toplevel', $self);
-	#$demo->transient($topparent);
-	$demo->group($topparent);
-	my $top  = $demo->Frame()->pack(-side=>'top',-fill=>'x');
+	#$tl_demo->transient($topparent);
+	$tl_demo->group($topparent);
+	my $top  = $tl_demo->Frame()->pack(-side=>'top',-fill=>'x');
+	$demo->pack();
 	my(@label_attributes) = ();
-	my $text = ($args{'-text'}||'Unknown Demo Text');
+	my $text = ($args{'-text'}||'');
 	if (ref($args{'-text'}) eq 'ARRAY') {
 	    @label_attributes = @$text[1 .. $#{$text}];
 	    $text = $text->[0];
@@ -49,14 +51,12 @@ $MW->Declare('WidgetDemo','toplevel');
 	    -wraplength => '4i',
 	    -justify    => 'left',
 	    -text       => $text,
-	    @label_attributes,			 
+	    @label_attributes,   # will override default
 	)->pack(-fill=>'x');
-	my $bot  = $demo->Frame();
+	my $bot  = $tl_demo->Frame();
 	$bot->pack(-side => "bottom", -fill => "x", -expand => 0);
 	my $wtype = 'WidgetDemo';
 	create_widget_package($wtype);
-	#create_method_in_widget_package($wtype,
-	#);
 	return bless $demo, "Tcl::Tk::Widget::$wtype";
     }
 }

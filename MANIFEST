@@ -90,7 +90,6 @@ tk-demos/widget_lib/mkTxtSearch.pl
 tk-demos/widget_lib/mkVScale.pl      
 tk-demos/widget_lib/msgBox.pl        
 tk-demos/widget_lib/plot.pl          
-tk-demos/widget_lib/Plot.pm          
 tk-demos/widget_lib/puzzle.pl        
 tk-demos/widget_lib/radio.pl         
 tk-demos/widget_lib/ruler.pl         

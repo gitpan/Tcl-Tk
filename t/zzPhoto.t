@@ -6,6 +6,7 @@ use Tcl::Tk qw/:perlTk/;
 BEGIN { plan tests => 13 };
 
 my $mw = MainWindow->new;
+$mw->interp->need_tk('Img');
 my $xpm;
 my $photo;
 

@@ -6,6 +6,7 @@ use Tcl::Tk qw/:perlTk/;
 
 my $mw  = MainWindow->new();
 $mw->geometry('+100+100');
+$mw->interp->need_tk('Img');
 
 plan tests => (2*(7 * 5) + 2);
 

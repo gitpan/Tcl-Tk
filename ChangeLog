@@ -1,3 +1,48 @@
+2004-09-13  Vadim Konovalov <vadim@vkonovalov.ru>
+
+	* lib/Tcl/Tk.pm: version 0.84
+	added sub 'lower'
+	fix 'cget' method, option '-menu' for Menubutton widget
+	now 'Photo' widget does not requires 'Img' package, user should
+	require it when needed
+	* t/photo.t: require 'Img' package
+	* t/zzPhoto.t: require 'Img' package
+	* tk-demos/widget: make demo widget be inside Frame, so it will not
+	depend on packer.
+	* tk-demos/widget_lib/menus.pl: few touches to make menu.pl demo work
+	* tk-demos/widget_lib/menus2.pl: few touches to make menu2.pl demo work
+	* Changes: brief summary for 0.84
+	* META.yml: bring up-to-date
+	* Makefile.PL: require Tcl.pm version 0.84
+
+2004-05-14  Jeff Hobbs  <jeffh@ActiveState.com>
+
+	* lib/Tcl/Tk.pm (Getimage): only require img::xpm for xpm's.
+	(create_ptk_widget_sub): don't do need_tk for Photo and Tree, they
+	already have the need_tk in their subs.
+	(Bitmap): don't require Img - image adds no 'bitmap' formats
+	(bind): support bind widget method with named tag sequences
+
+2004-05-15  Vadim Konovalov <vkonovalov@peterstar.ru>
+
+	* lib/Tcl/Tk.pm (widget): fix a bug; describe widget_data methods
+
+2004-05-15  Vadim Konovalov <vkonovalov@peterstar.ru>
+
+	* tk-demos/widget_lib/ruler.pl: fix
+
+2004-05-15  Vadim Konovalov <vkonovalov@peterstar.ru>
+
+	* lib/Tcl/Tk.pm: version 0.83
+	* MANIFEST: remove ./tk-demos/widget_lib/Plot.pm
+	* tk-demos/widget_lib/Plot.pm: removed
+	* tk-demos/widget_lib/plot.pl: borrowed from original Tcl/Tk demo
+	* tk-demos/widget_lib/ruler.pl: fixes. Not finished!
+
+2004-05-10  Slaven Rezic  <slaven@rezic.de>
+
+	* Makefile.PL: added --tclsh switch
+
 2004-05-09  Konovalov <vkonovalov@peterstar.ru>
 
 	* META.yml: fix syntax error
