@@ -3,15 +3,15 @@ name:         Tcl-Tk
 version_from: lib/Tcl/Tk.pm
 installdirs:  site
 requires:
-  Tcl: 0.76
+  Tcl: 0.81
 private:
   directory:
-  - demos
-  - tk-demos
+    - demos
+    - tk-demos
 keywords:
-- Tk
-- Tcl/Tk/Tix
-- GUI
+  - Tk
+  - Tcl/Tk/Tix
+  - GUI
 auto_regenerate: false
 distribution_type: module
 generated_by: ExtUtils::MakeMaker version 6.21_01

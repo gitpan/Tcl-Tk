@@ -1,5 +1,9 @@
 Revision history for Perl extension Tcl::Tk.
 
+0.80    10-may-2004
+	- Makefile.PL now check if Tcl/Tk able to do 'package require Tk'
+	- fix META.yml syntax
+
 0.81    09-may-2004
 	- completely reworked how information about widgets is organized
 	- few bug fixes

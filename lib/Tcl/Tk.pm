@@ -6,7 +6,7 @@ use Exporter;
 use vars qw(@ISA @EXPORT_OK %EXPORT_TAGS);
 @ISA = qw(Exporter Tcl);
 
-$Tcl::Tk::VERSION = '0.81';
+$Tcl::Tk::VERSION = '0.82';
 
 # For users that want to ensure full debugging from initial use call,
 # including the checks for other Tk modules loading following Tcl::Tk
