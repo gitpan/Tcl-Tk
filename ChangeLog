@@ -1,0 +1,94 @@
+2004-04-05  Vadim Konovalov  <vkonovalov@peterstar.ru>
+
+	* lib/Tcl/Tk.pm corrected typo in comment about Tree widget
+	(_process_underline): now it takes ref to hash and edits it
+	to save array copies.
+
+	Tcl::Tk::Widget::MultipleWidget now started working (to ease
+	perlTk compatibility)
+
+	Version 0.76 for releasing to CPAN
+
+	* META.yml remove DOS line endings, Tk.pm=>lib/Tcl/Tk.pm
+
+	* demos/tcltkdb.pm made some ptkdb::xxx=>tcltkdb changes to
+	unfrustrate indexer
+
+	* MANIFEST change to add demo and improve explaining a bit
+	
+	added demos/multiwidget.pl as example how to use
+	Tcl::Tk::Widget::MultipleWidget
+
+
+2004-04-02  Jeff Hobbs  <jeffh@ActiveState.com>
+
+	* lib/Tcl/Tk.pm (Menu, Menubutton): process ~ => -underline.
+	functions.
+	(Getimage): inline findINC and fix to look in "Tk/" subdirs.
+	(w_uniq): more debugging info.
+	(getOpenFile, getSaveFile): add as pTk compat functions
+	(AUTOLOAD): handle after[A-Z]* commands as pTk compat funcs.
+
+2004-04-01  Jeff Hobbs  <jeffh@ActiveState.com>
+
+	* lib/Tcl/Tk.pm (need_tk): 'call' package requires with unless
+	check for Tix packages.
+	(tk_gestapo): add callerfile:callerline to warning
+	(iconimage): add unimplemented stub for pTk 'iconimage'
+	(ItemStyle, Getimage, findInc): add compat routines for pTk's
+	ItemStyle, Getimage and finInc functions
+	(Panedwindow): alias to 8.4 core panedwindow widget
+	(Menu, Menubutton): add support for cget -menu and attempt to
+	configure the toplevel menu when created.
+	(Tree): add compat routine for pTk Tree
+	(Scrolled): Tree does its own scrolling (other widgets may too)
+
+2004-03-31  Jeff Hobbs  <jeffh@ActiveState.com>
+
+	* lib/Tcl/Tk.pm: add BEGIN usage comments for DEBUG and cleaned up
+	usage.
+	(need_tk): prefer call over Eval and destroy dummy widgets.
+	(AUTOLOAD): handle grid[A-Z]* commands properly in pTk compat.
+
+	* Tk.pm (removed), lib/Tcl/Tk.pm (added):
+	* Makefile.PL: move Tk.pm to more standard lib/Tcl location,
+	* MANIFEST:    simplifying WriteMakefile.  DISTNAME also uses CPAN
+	standard Tcl-Tk now (was TclTk).
+
+2004-03-29  Jeff Hobbs  <jeffh@ActiveState.com>
+
+	* t/Tk.xbm, t/Xcamel.gif, t/folder.xpm, t/photo.t, t/zzPhoto.t:
+	* META.yml: added files for 0.75 that weren't in CVS
+
+2004-03-28  Vadim Konovalov  <vkonovalov@peterstar.ru>
+
+	released version 0.75 to CPAN
+
+	DEBUG now off by default
+	
+	Added file Meta.yml (but CPAN indexer reports syntax error)
+	Must correct this according to CPAN specs
+	(http://module-build.sourceforge.net/META-spec-new.html)
+
+	README more explanations and better structured
+
+	More perlTk compatibility:
+	  * Listbox/perlTk => listbox
+	  * Tcl::Tk::Exists (Tk::Exists)
+	  * 'Darken' widget method (borrowed from Widget.pm/perlTk)
+	  * 'timer' behaves like widget
+	  * replaced options now could be subroutine ref
+	  * canvas bind
+	  * Photo
+	  * Menu, Menubutton much more capable now
+	  * few others (wm, winfo, ...)
+
+2004-03-22  Jeff Hobbs  <jeffh@ActiveState.com>
+
+	* Tk.pm: correct pannedwindow -> panedwindow
+	Add hijacking of Tk::* modules on @INC path to detect when Tk is
+	being loaded after we have been.  At some point this either needs
+	to be disallowed or (better yet) the modules must be emulated
+	using Tcl::Tk.
+
+	started using ChangeLog

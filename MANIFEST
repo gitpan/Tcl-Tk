@@ -1,0 +1,85 @@
+TODO
+Changes		changes file
+ChangeLog	detailed ChangeLog file
+MANIFEST	This list of files
+Makefile.PL	Tcl::Tk extension makefile writer
+ceMakefile.pl	makefile writer for WinCE cross-compilation
+README		Introduction to the Tcl::Tk extension
+lib/Tcl/Tk.pm	Tcl::Tk extension module
+Tk.xs		Tcl::Tk extension implementation
+typemap		Tcl::Tk extension types
+META.yml
+t/after.t
+t/photo.t
+t/folder.xpm
+t/Tk.xbm
+t/Xcamel.gif
+t/text.t
+t/zzPhoto.t
+demos/demo.pl		simple demo script
+demos/demo-w-tix.pl	simple demo script with tix 'form' geometry manager
+demos/wcolors.pl	demo script with syntax very similar to perlTk
+demos/activex.pl	demo script for Windows that uses ActiveX
+demos/tcltkdb.pm	very alpha but working debugger ptkdb adopted for usage with Tcl::Tk
+demos/multiwidget.pl	example how to use Tcl::Tk::Widget::MultipleWidget
+tk-demos/arrow.tcl
+tk-demos/bind.pl
+tk-demos/bitmap.tcl	
+tk-demos/browse
+tk-demos/button.pl	
+tk-demos/check.pl	
+tk-demos/clrpick.tcl	
+tk-demos/colors.pl
+tk-demos/cscroll.tcl	
+tk-demos/ctext.pl	
+tk-demos/dialog1.tcl	
+tk-demos/dialog2.tcl	
+tk-demos/entry1.pl	
+tk-demos/entry2.pl	
+tk-demos/entry3.pl	
+tk-demos/filebox.tcl	
+tk-demos/floor.tcl	
+tk-demos/form.pl	
+tk-demos/hscale.tcl	
+tk-demos/icon.pl	
+tk-demos/image1.pl	
+tk-demos/image2.pl	
+tk-demos/items.pl
+tk-demos/label.pl	
+tk-demos/labelframe.pl	
+tk-demos/license.terms
+tk-demos/menu.tcl
+tk-demos/menubu.tcl
+tk-demos/msgbox.tcl
+tk-demos/paned1.tcl
+tk-demos/paned2.tcl
+tk-demos/plot.pl
+tk-demos/puzzle.pl
+tk-demos/radio.pl
+tk-demos/README
+tk-demos/rmt
+tk-demos/ruler.tcl
+tk-demos/sayings.pl
+tk-demos/search.pl
+tk-demos/spin.pl
+tk-demos/square
+tk-demos/states.pl
+tk-demos/style.pl
+tk-demos/tcolor
+tk-demos/text.pl
+tk-demos/timer
+tk-demos/twind.pl
+tk-demos/unicodeout.pl
+tk-demos/vscale.tcl
+tk-demos/widget.pl
+tk-demos/images/earth.gif
+tk-demos/images/earthris.gif
+tk-demos/images/face.bmp
+tk-demos/images/flagdown.bmp
+tk-demos/images/flagup.bmp
+tk-demos/images/gray25.bmp
+tk-demos/images/letters.bmp
+tk-demos/images/noletter.bmp
+tk-demos/images/pattern.bmp
+tk-demos/images/tcllogo.gif
+tk-demos/images/teapot.ppm
