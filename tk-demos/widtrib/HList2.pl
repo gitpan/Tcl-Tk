@@ -2,7 +2,7 @@
 # -*- perl -*-
 
 #
-# $Id: $
+# $Id: HList2.pl,v 1.1 2004/05/02 21:19:16 vkonovalov Exp $
 # Author: Slaven Rezic
 #
 # Copyright (C) 1999 Slaven Rezic. All rights reserved.

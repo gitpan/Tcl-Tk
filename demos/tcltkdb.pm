@@ -2109,14 +2109,14 @@ sub configure_text {
   $txt->tagConfigure("breaksetLine", -background => $mw->optionGet("breaktagcolor", "background") || $ENV{'PTKDB_BRKPT_COLOR'} || 'red') ;
   $txt->tagConfigure("breakdisabledLine", -background => $mw->optionGet("disabledbreaktagcolor", "background") || $ENV{'PTKDB_DISABLEDBRKPT_COLOR'} || 'green') ;
   
-  $txt->tagBind("breakableLine", '<Button-1>', [sub {my ($x,$y,@rest)=@_;Devel::tcltkdb::set_breakpoint_tag($txt,$self, "\@$x,$y", 1 )} , Tcl::Ev('%x','%y')]) ;
-  $txt->tagBind("breakableLine", '<Shift-Button-1>', [sub {my ($x,$y,@rest)=@_; Devel::tcltkdb::set_breakpoint_tag($txt,$self, "\@$x,$y", 0 )} , Tcl::Ev('%x','%y')] ) ;
+  $txt->tagBind("breakableLine", '<Button-1>', \\'@xy', sub {Devel::tcltkdb::set_breakpoint_tag($txt,$self, '@'.Tcl::Ev('x').','.Tcl::Ev('y'), 1 )}  ) ;
+  $txt->tagBind("breakableLine", '<Shift-Button-1>', \\'@xy', sub { Devel::tcltkdb::set_breakpoint_tag($txt,$self, Tcl::Ev('@'), 0 )}  ) ;
   
-  $txt->tagBind("breaksetLine", '<Button-1>',  [sub {my ($x,$y,@rest)=@_; Devel::tcltkdb::clear_breakpoint_tag($txt,$self, "\@$x,$y")} , Tcl::Ev('%x','%y') ]) ;
-  $txt->tagBind("breaksetLine", '<Shift-Button-1>',  [sub {my ($x,$y,@rest)=@_; Devel::tcltkdb::change_breakpoint_tag($txt, $self, "\@$x,$y", 0 )}  , Tcl::Ev('%x','%y')]) ;
+  $txt->tagBind("breaksetLine", '<Button-1>',  \\'@xy', sub { Devel::tcltkdb::clear_breakpoint_tag($txt,$self, '@'.Tcl::Ev('x').','.Tcl::Ev('y') )}  ) ;
+  $txt->tagBind("breaksetLine", '<Shift-Button-1>',  \\'@xy', sub { Devel::tcltkdb::change_breakpoint_tag($txt, $self, '@'.Tcl::Ev('x').','.Tcl::Ev('y'), 0 )}  ) ;
   
-  $txt->tagBind("breakdisabledLine", '<Button-1>', [sub {my ($x,$y,@rest)=@_; Devel::tcltkdb::clear_breakpoint_tag($txt, $self, "\@$x,$y")}  , Tcl::Ev('%x','%y')]) ;
-  $txt->tagBind("breakdisabledLine", '<Shift-Button-1>', [sub {my ($x,$y,@rest)=@_; Devel::tcltkdb::change_breakpoint_tag($txt, $self, "\@$x,$y", 1) } , Tcl::Ev('%x','%y') ]) ;
+  $txt->tagBind("breakdisabledLine", '<Button-1>', \\'@xy', sub { Devel::tcltkdb::clear_breakpoint_tag($txt, $self, '@'.Tcl::Ev('x').','.Tcl::Ev('y') )}  ) ;
+  $txt->tagBind("breakdisabledLine", '<Shift-Button-1>', \\'@xy', sub { Devel::tcltkdb::change_breakpoint_tag($txt, $self, '@'.Tcl::Ev('x').','.Tcl::Ev('y'), 1) }  ) ;
   
 } # end of configure_text
 

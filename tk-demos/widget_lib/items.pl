@@ -182,28 +182,29 @@ sub items {
     # read the specially localized variable $Tk::event.  We'll use XEvent
     # first, and the variable from then on.
 
-    $c->CanvasBind('<<Copy>>',sub { print "Do Copy\n" });
+    $c->bind('<<Copy>>',sub { print "Do Copy\n" });
 
-    $c->CanvasBind('<1>' => sub {
+    $c->CanvasBind('<1>' => [sub {
+	my ($x,$y) = (shift, shift);
 	my($c) = @_;
-        my $e = $c->XEvent;
-	items_start_drag $c, $e->x, $e->y, \%iinfo;
-    });
+	items_start_drag $c, $x, $y, \%iinfo;
+    },Tcl::Ev('%x','%y')]);
     $c->CanvasBind('<B1-Motion>' =>
-        sub {items_drag shift, $Tk::event->x, $Tk::event->y, \%iinfo});
+        [sub {my ($x,$y) = (shift, shift);items_drag shift, $x, $y, \%iinfo},Tcl::Ev('%x','%y')]);
     $c->CanvasBind('<2>' =>
-        sub {shift->scan('mark', $Tk::event->x, $Tk::event->y)});
+        [sub {my ($x,$y) = (shift, shift);shift->scan('mark', $x, $y)},Tcl::Ev('%x','%y')]);
     $c->CanvasBind('<B2-Motion>' =>
-         sub {shift->scan('dragto', $Tk::event->x, $Tk::event->y)});
+         [sub {my ($x,$y) = (shift, shift);shift->scan('dragto', $x, $y)},Tcl::Ev('%x','%y')]);
     $c->CanvasBind('<3>' =>
-         sub {items_mark shift, $Tk::event->x, $Tk::event->y, \%iinfo});
+         [sub {my ($x,$y) = (shift, shift);items_mark shift, $x, $y, \%iinfo},Tcl::Ev('%x','%y')]);
     $c->CanvasBind('<B3-Motion>' =>
-         sub {items_stroke shift, $Tk::event->x, $Tk::event->y, \%iinfo});
+         [sub {my ($x,$y) = (shift, shift);items_stroke shift, $x, $y, \%iinfo},Tcl::Ev('%x','%y')]);
     $c->CanvasBind('<Control-f>' => [sub {
+	    #my ($x,$y) = (shift, shift);
 	my($c, $iinfo) = @_;
-        my $e = $c->XEvent;
+	#my $e = $c->XEvent;
 	items_under_area $c, $iinfo;
-    }, \%iinfo]);
+    }, Tcl::Ev('%x','%y'), \%iinfo]);
     $c->CanvasBind('<Any-Enter>' => sub {$_[0]->CanvasFocus});
 
 } # end items

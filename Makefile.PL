@@ -7,6 +7,6 @@ WriteMakefile(
     NAME => "Tcl::Tk",
     VERSION_FROM => 'lib/Tcl/Tk.pm',
     PREREQ_PM => {
-	Tcl => 0.80,
+	Tcl => 0.81,
     },
 );

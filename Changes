@@ -1,5 +1,12 @@
 Revision history for Perl extension Tcl::Tk.
 
+0.81    09-may-2004
+	- completely reworked how information about widgets is organized
+	- few bug fixes
+	- tk-demos few more demos adopted
+	- perlTk compatibility further additions (Bitmap widget, some
+	  widgets methods)
+
 0.80    03-may-2004
 	- Tcl::Tk module is now pure-perl module; will be part of 'Tcl'
 	  module

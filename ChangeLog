@@ -1,3 +1,63 @@
+2004-05-09  Konovalov <vkonovalov@peterstar.ru>
+
+	* lib/Tcl/Tk.pm: fix a typo
+	* Changes: brief summary between 0.80 and 0.81
+
+2004-05-09  Konovalov <vkonovalov@peterstar.ru>
+
+	* lib/Tcl/Tk.pm: completely reworked %W; now this is a hash
+	based on window id, so should allow multiple interpreters.
+
+2004-05-09  Konovalov <vkonovalov@peterstar.ru>
+
+	* lib/Tcl/Tk.pm: few small fixes: overload eq/ne, Bitmap widget
+
+2004-05-09  Konovalov <vkonovalov@peterstar.ru>
+
+	* lib/Tcl/Tk.pm: redo meaning of %W hash to save memory and gain
+	speed: instead of number of small hashes, create few larger hashes;
+	yet create few shortcuts to $W{DATA}, $W{INT}, $W{PATH}.
+	Change $W{$path}->{'XXXX'} to $W{$path}->{'XXXX'} everywhere and
+	$W{$$widget}->{'INT'} to $widget->interp.
+	support widget_data concept $W{DATA} to optionally create widget data;
+	Add overload for 'eq' and 'ne' to help t/optmenu.t to pass.
+	Fix Tcl::Tk::Widget::MultipleWidget.
+
+2004-05-08  Konovalov <vkonovalov@peterstar.ru>
+
+	* lib/Tcl/Tk.pm: Tcl::Tk::Widget's stringification now works, it
+	causes path tosubstitute; subroutine _bind_canvas_text_helper
+	renamed to _bind_widget_helper; add code to recognize 'bind' for 
+	Listbox as widget's method;
+	perlTk compatibility: Bitmap widget, some Canvas method, 'tag'
+	Text's method (should move to own package?)
+	* tk-demos/unicodeout.pl: removed, its code moved to another demo
+	* MANIFEST: tk-demos/unicodeout.pl removed
+	* tk-demos/*: changes in demo code for files items.pl, cscroll.pl,
+	vscale.pl, hscale.pl, labels.pl, colors.pl, image2.pl
+
+2004-05-07  Konovalov <vkonovalov@peterstar.ru>
+
+	* lib/Tcl/Tk.pm (MultipleWidget::new): fix a bug that causes
+	demo/multiplewidget to misbehave
+
+2004-05-06  Jeff Hobbs  <jeffh@ActiveState.com>
+
+	* lib/Tcl/Tk.pm (need_tk): do a straight require of
+	Tcl::Tk::Widget|Table and allow that error to be thrown (the user
+	will need to know if it occurs).
+
+2004-05-04  Jeff Hobbs  <jeffh@ActiveState.com>
+
+	* Makefile.PL: require Tcl 0.81
+	* lib/Tcl/Tk.pm (need_tk): remove the need for the extra command
+	in all cases as Tcl.pm 0.81 fixed icall to use Tcl's unknown
+	mechanism (AUTOLOAD) properly.  Bumped to 0.81.
+
+2004-05-03  Gisle Aas <gisle@ActiveState.com>
+
+	* lib/Tcl/Tk.pm: Make Exists(undef) work without warning.
+
 2004-05-03  Vadim Konovalov <vkonovalov@peterstar.ru>
 
 	* MANIFEST: demos/demo-w-tix.pl removed, tk-demos reorganization

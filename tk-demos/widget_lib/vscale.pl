@@ -33,7 +33,7 @@ sub vscale {
 
 sub vscale_height {
 
-    my($w, $height) = @_;
+    my($w, $height) = reverse @_; # why arguments were in reverse order?
 
     $height += 21;
     my $y2 = $height - 30;

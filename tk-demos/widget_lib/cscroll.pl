@@ -20,7 +20,7 @@ sub cscroll {
         -scrollbars se -scrollregion/ => ['-10c', '-10c', '50c', '20c']);
     $c->pack(qw/-expand yes -fill both/);
 
-    my($bg, $i, $j, $x, $y) = ($c->configure(-background))[4];
+    my($bg, $i, $j, $x, $y) = ($c->cget(-background));
     for ($i = 0; $i < 20; $i++) {
 	$x = -10 + 3 * $i;
 	$j = 0;
@@ -41,16 +41,18 @@ sub cscroll {
     $c->bind('all', '<Any-Leave>' => [\&cscroll_leave, \$old_fill]);
     $c->bind('all', '<1>' => \&cscroll_button);
 
-    $c->CanvasBind('<2>' => sub {
+    $c->CanvasBind('<2>' => [sub {
+	my ($x,$y) = (shift, shift);
 	my ($c) = @_;
-        my $e = $c->XEvent;
-	$c->scan('mark', $e->x, $e->y);
-    });
-    $c->CanvasBind('<B2-Motion>' => sub {
+        #my $e = $c->XEvent;
+	$c->scan('mark', $x, $y);
+    },Tcl::Ev('%x','%y')]);
+    $c->CanvasBind('<B2-Motion>' => [sub {
+	my ($x,$y) = (shift, shift);
 	my ($c) = @_;
-        my $e = $c->XEvent;
-	$c->scan('dragto', $e->x, $e->y);
-    });
+        #my $e = $c->XEvent;
+	$c->scan('dragto', $x, $y);
+    },Tcl::Ev('%x','%y')]);
 
 } # end cscroll
 

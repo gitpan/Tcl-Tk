@@ -18,7 +18,7 @@ sub hscale {
     my $frame = $TOP->Frame(-borderwidth => 10)->pack(qw/-side top -fill x/);
 
     my $canvas = $frame->Canvas(
-        qw/width 50 -height 50 -bd 0 -highlightthickness 0/);
+        qw/-width 50 -height 50 -bd 0 -highlightthickness 0/);
     $canvas->create(qw/polygon 0 0 1 1 2 2 -fill DeepSkyBlue3 -tags poly/);
     $canvas->create(qw/line 0 0 1 1 2 2 0 0 -fill black -tags line/);
 
@@ -33,7 +33,7 @@ sub hscale {
 
 sub hscale_width {
 
-    my($w, $width) = @_;
+    my($w, $width) = reverse @_; # why arguments were in reverse order?
 
     $width += 21;
     my $x2 = $width - 30;

@@ -48,7 +48,7 @@ sub image2 {
     $f_list->insert(0, qw(earth.gif earthris.gif mickey.gif teapot.ppm));
 
     my $image2a = $TOP->Photo;
-    $f_list->bind('<Double-1>' => [\&image2_load_image, $image2a, \$demo_img]);
+    $f_list->bind('<Double-1>' => [\&image2_load_image, Tcl::Ev('%x','%y'), $image2a, \$demo_img]);
     my $image_label = $toad->Label(-text => 'Image:');
     my $image = $toad->Label(-image => $image2a);
     @pl = qw/-side top -anchor w/;
@@ -91,10 +91,11 @@ sub image2_load_image {
     # i       -         Reference to image object.
     # dir_name -         Directory name reference.
 
+    my($x, $y) = (shift, shift);
     my($l, $i, $dir_name) = @_;
 
-    my $e = $l->XEvent;
-    my($x, $y) = ($e->x, $e->y);
+    #my $e = $l->XEvent;
+    #my($x, $y) = ($e->x, $e->y);
     $i->configure(-file => "$$dir_name/" . $l->get("\@$x,$y"));
 
     # NOTE:  $l->get('active') works just as well.

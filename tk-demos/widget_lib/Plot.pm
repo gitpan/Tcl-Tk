@@ -12,7 +12,7 @@ package Plot;
 require 5.002;
 
 use vars qw/$VERSION @ISA/;
-$VERSION = '4.002'; # $Id: //depot/Tkutf8/demos/demos/widget_lib/Plot.pm#2 $
+$VERSION = '4.002'; # $Id: Plot.pm,v 1.1 2004/05/02 21:17:09 vkonovalov Exp $
 
 use Tk::Frame;
 use base  qw(Tk::Frame);

@@ -21,7 +21,7 @@ sub colors {
 
     $list->bind('<Double-1>' =>
         sub  {
-	    $list->interp->Eval('tk_setPalette '.$list->get('active'));
+	    $list->interp->call('tk_setPalette', $list->get('active'));
 	},
     );
 

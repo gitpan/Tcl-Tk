@@ -101,7 +101,6 @@ tk-demos/widget_lib/style.pl
 tk-demos/widget_lib/texts.pl         
 tk-demos/widget_lib/transtile.pl     
 tk-demos/widget_lib/twind.pl         
-tk-demos/widget_lib/unicodeout.pl    
 tk-demos/widget_lib/vscale.pl        
 tk-demos/widtrib/balloon.pl          
 tk-demos/widtrib/browseentry.pl      
