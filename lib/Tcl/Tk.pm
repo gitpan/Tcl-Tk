@@ -6,7 +6,7 @@ use Exporter;
 use vars qw(@ISA @EXPORT_OK %EXPORT_TAGS);
 @ISA = qw(Exporter Tcl);
 
-$Tcl::Tk::VERSION = '0.84';
+$Tcl::Tk::VERSION = '0.85';
 
 # For users that want to ensure full debugging from initial use call,
 # including the checks for other Tk modules loading following Tcl::Tk
@@ -29,7 +29,7 @@ sub DEBUG {
 }
 
 if (DEBUG()) {
-    # The gestapo throw warnings whenever Perl/Tk modules are requested.
+    # The gestapo throws warnings whenever Perl/Tk modules are requested.
     # It also hijacks such requests and returns an empty module in its
     # place.
     unshift @INC, \&tk_gestapo;
@@ -388,7 +388,7 @@ sub new {
     $i->SetVar("argc", scalar(@ARGV), Tcl::GLOBAL_ONLY);
     $i->SetVar("tcl_interactive", 0, Tcl::GLOBAL_ONLY);
     $i->SUPER::Init();
-    $i->need_tk('Tk');
+    $i->pkg_require('Tk', $i->GetVar('tcl_version'));
     my $mwid;
     if (!defined($tkinterp)) {
 	$mwid = $i->invoke('winfo','id','.');
@@ -695,29 +695,47 @@ sub pack {
     $int->call("pack", @_);
 }
 
-sub need_tk {
+sub pkg_require {
+    # Do Tcl package require with optional version, cache result.
     my $int = shift;
-    my $what = shift;
-    my $cmd  = shift;
+    my $pkg = shift;
+    my $ver = shift;
 
-    $cmd = '' unless defined $cmd;
-    return if $preloaded_tk{$what}{$cmd};
+    DEBUG(1, "PKG REQUIRE $pkg\n");
+    return $preloaded_tk{$pkg} if $preloaded_tk{$pkg};
 
-    DEBUG(1, "PKG REQUIRE $what ++ $cmd\n");
-    if ($what eq 'pure-perl-Tk') {
+    my @args = ("package", "require", $pkg);
+    push(@args, $ver) if defined($ver);
+    eval { $preloaded_tk{$pkg} = $int->icall(@args); };
+    if ($@) {
+	# Don't cache failures, as the package may become available by
+	# changing auto_path and such.
+	return;
+    }
+    return $preloaded_tk{$pkg};
+}
+
+sub need_tk {
+    # DEPRECATED: Use pkg_require and call instead.
+    my $int = shift;
+    my $pkg = shift;
+    my $cmd = shift || '';
+
+    DEBUG(1, "DEPRECATED CALL: need_tk($pkg, $cmd), use pkg_require\n");
+    if ($pkg eq 'pure-perl-Tk') {
         require Tcl::Tk::Widget;
     }
-    elsif ($what eq 'ptk-Table') {
+    elsif ($pkg eq 'ptk-Table') {
         require Tcl::Tk::Table;
     }
     else {
 	# Only require the actual package once
-	$int->icall("package", "require", $what)
-	    unless keys %{$preloaded_tk{$what}};
+	my $ver = $int->pkg_require($pkg);
+	return 0 if !defined($ver);
 	$int->Eval($cmd) if $cmd;
     }
 
-    $preloaded_tk{$what}{$cmd}++;
+    return 1;
 }
 
 sub tk_gestapo {
@@ -917,7 +935,7 @@ create_method_in_widget_package ('Canvas',
 sub form {
     my $self = shift;
     my $int = $self->interp;
-    $int->need_tk("Tix");
+    $int->pkg_require("Tix");
     my @arg = @_;
     for (@arg) {
 	if (ref && ref eq 'ARRAY') {
@@ -993,7 +1011,7 @@ sub ItemStyle {
     my $styl = shift;
     my $wp   = $self->path;
     my $int  = $self->interp;
-    $int->need_tk('Tix');
+    $int->pkg_require('Tix');
     my %args = @_;
     $args{'-refwindow'} = $wp unless exists $args{'-refwindow'};
     $int->call('tixDisplayStyle', $styl, %args);
@@ -1137,7 +1155,7 @@ sub Getimage {
 	next unless -f $path;
 	DEBUG(2, "Getimage: FOUND IMAGE $path\n");
 	if ($ext eq "xpm") {
-	    $int->need_tk('img::xpm');
+	    $int->pkg_require('img::xpm');
 	}
 	my @args = ('image', 'create', $image_formats{$ext}, -file => $path);
 	if ($image_formats{$ext} ne "bitmap") {
@@ -1308,14 +1326,15 @@ sub create_ptk_widget_sub {
     my ($ttktype,$wpref,$tpkg,$tcmd) = @{$ptk2tcltk{$wtype}};
     $wpref ||= lcfirst $wtype;
 
-    if ($tpkg) { $tkinterp->need_tk($tpkg,$tcmd); }
+    $tkinterp->pkg_require($tpkg) if $tpkg;
+    $tkinterp->Eval($tcmd)        if $tcmd;
 
     if ($ttktype =~ s/^\*perlTk\///) {
 	# should create pure-perlTk widget and bind it to Tcl variable so that
 	# anytime a method invoked it will be redirected to Perl
 	return sub {
 	  my $self = shift; # this will be a parent widget for newer widget
-	  my $int = $self->interp;
+	  my $int  = $self->interp;
           my $w    = w_uniq($self, $wpref); # create uniq pref's widget id
 	  die "pure-perlTk widgets are not implemented";
 	};
@@ -1613,7 +1632,7 @@ sub Balloon {
     my $self = shift; # this will be a parent widget for newer balloon
     my $int = $self->interp;
     my $w    = w_uniq($self, "bln"); # return unique widget id
-    $int->need_tk('Tix');
+    $int->pkg_require('Tix');
     my $bw = $int->declare_widget($int->call('tixBalloon', $w, @_));
     my $wtype = 'Balloon';
     require "Tcl/Tk/Widget/$wtype.pm";
@@ -1623,7 +1642,7 @@ sub NoteBook {
     my $self = shift; # this will be a parent widget for newer notebook
     my $int = $self->interp;
     my $w    = w_uniq($self, "nb"); # return unique widget id
-    $int->need_tk('Tix');
+    $int->pkg_require('Tix');
     my %args = @_;
     delete $args{'-tabpady'};
     delete $args{'-inactivebackground'};
@@ -1742,7 +1761,7 @@ sub Photo {
     # XXX requirement on Img should be pushed to the user level, or only
     # XXX require those formats that Perl/Tk auto-supported (jpeg, ???)
     # VK how differents format should be differentiated? TBD
-    #$int->need_tk('Img');
+    #$int->pkg_require('Img');
     my $bw = $int->declare_widget($int->call('image','create', 'photo', @_));
     create_widget_package('Photo');
     bless $bw, "Tcl::Tk::Widget::Photo";
@@ -1770,7 +1789,7 @@ sub Tree {
     my $self = shift; # this will be a parent widget for newer tree
     my $int = $self->interp;
     my $w    = w_uniq($self, "tree"); # return unique widget id
-    $int->need_tk('Tix');
+    $int->pkg_require('Tix');
     my %args = @_;
     my %sub_args;
     foreach (@{$subwidget_options{'Tree'}}) {
@@ -1818,7 +1837,7 @@ sub Scrolled {
     }
 
     # Use BWidget ScrolledWindow as wrapper widget
-    $int->need_tk('BWidget');
+    $int->pkg_require('BWidget');
     my $w  = w_uniq($self, "sc"); # return unique widget id
     my $sw = $int->call('ScrolledWindow', $w,
 			-auto=>'both', -scrollbar=>'both');

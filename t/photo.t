@@ -6,7 +6,12 @@ use Tcl::Tk qw/:perlTk/;
 
 my $mw  = MainWindow->new();
 $mw->geometry('+100+100');
-$mw->interp->need_tk('Img');
+
+
+if (!$mw->interp->pkg_require('Img')) {
+    print "1..0 # skip: no Img extension available ($@)\n";
+    exit;
+}
 
 plan tests => (2*(7 * 5) + 2);
 

@@ -1,5 +1,9 @@
 Revision history for Perl extension Tcl::Tk.
 
+0.85    31-dec-2004
+	- new pkg_require command, deprecates need_tk
+	- minor test fixes for portability
+
 0.84    13-sept-2004
 	- more perlTk compatibility
 	- more tk-demos/ changes

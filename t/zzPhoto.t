@@ -3,10 +3,15 @@ use strict;
 use Test;
 use Tcl::Tk qw/:perlTk/;
 
-BEGIN { plan tests => 13 };
-
 my $mw = MainWindow->new;
-$mw->interp->need_tk('Img');
+
+if (!$mw->interp->pkg_require('Img')) {
+    print "1..0 # skip: no Img extension available\n";
+    exit;
+}
+
+plan tests => 13;
+
 my $xpm;
 my $photo;
 

@@ -1,3 +1,20 @@
+2004-12-30  Jeff Hobbs  <jeffh@ActiveState.com>
+
+	* Makefile.PL: allow tclsh exe to be propagated by env var
+
+	* t/photo.t, t/zzPhoto.t: use pkg_require instead of need_tk for Img
+
+	* META.yml: bump to 0.85
+
+	* lib/Tcl/Tk.pm: deprecate need_tk in favor of new pkg_require
+	command that can take a version arg.
+	Bump to 0.85
+
+2004-12-08  Slaven Rezic  <slaven@rezic.de>
+
+	* t/photo.t: do not fail if Img is not available
+	* t/zzPhoto.t: do not fail if Img is not available
+
 2004-09-13  Vadim Konovalov <vadim@vkonovalov.ru>
 
 	* lib/Tcl/Tk.pm: version 0.84
