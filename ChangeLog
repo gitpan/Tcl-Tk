@@ -1,3 +1,28 @@
+2005-02-02  Vadim Konovalov <vadimk@vkonovalov.ru>
+
+	* lib/Tcl/Tk.pm: disable temporarily cleanup on widget destruction
+	* Changes: prepare for CPAN release
+
+2005-01-30  Vadim Konovalov <vadimk@vkonovalov.ru>
+
+	* lib/Tcl/Tk.pm: do '$int->invoke' instead of '$int->call' in some
+	places, where no arg transformation needed
+	optionally automatic cleanup on widget deletion
+
+2005-01-29  Vadim Konovalov <vadimk@vkonovalov.ru>
+
+	* lib/Tcl/Tk.pm: 'Tcl::Tk::Widget::AUTOLOAD' remove variable $wp,
+	move out sub 'children'
+	create sub 'Tcl::Tk::AUTOLOAD' for Tcl/Tk interpreter object
+	comment out (prepare for removal) many Tcl::Tk:: subroutines
+	bump to 0.87
+	* META.yml: bump to 0.87
+	* Changes: fix 0.86 records, add new 0.87 records
+
+2005-01-28  Vadim Konovalov <vadimk@vkonovalov.ru>
+
+	* lib/Tcl/Tk.pm: more touches in documentation
+
 2005-01-28  Vadim Konovalov <vadimk@vkonovalov.ru>
 
 	* lib/Tcl/Tk.pm: documentation seriously reworked
