@@ -1,3 +1,69 @@
+2005-01-28  Vadim Konovalov <vadimk@vkonovalov.ru>
+
+	* lib/Tcl/Tk.pm: documentation seriously reworked
+
+2005-01-24  Vadim Konovalov <vadimk@vkonovalov.ru>
+
+	* lib/Tcl/Tk.pm: 'Declare' guess default -prefix better
+	'AUTOLOAD' lc->lcfirst
+	prohibit widget class names with non-alphabetic characters
+
+2005-01-23  Vadim Konovalov <vadimk@vkonovalov.ru>
+
+	* lib/Tcl/Tk.pm: $text->bind should behave like in any other widget.
+
+2005-01-22  Vadim Konovalov <vadimk@vkonovalov.ru>
+
+	* lib/Tcl/Tk.pm: complete $widget->_method faster methods
+	bump to 0.86
+	* META.yml: bump to 0.86
+
+2005-01-21  Vadim Konovalov <vadimk@vkonovalov.ru>
+
+	* lib/Tcl/Tk.pm: some documentation addition
+	make DEBUG lighter for module (although harder for developers)
+
+2005-01-20  Vadim Konovalov <vadimk@vkonovalov.ru>
+
+	* lib/Tcl/Tk.pm: 'Tcl::Tk::Widget::AUTOLOAD': when used _xxxxxx
+	widget method, this means faster version of xxxxxx ($interp->invoke)
+
+2005-01-19  Vadim Konovalov <vadimk@vkonovalov.ru>
+
+	* lib/Tcl/Tk.pm: 'widget': optionally takes widget package widget type
+	as parameter
+
+2005-01-19  Vadim Konovalov <vadimk@vkonovalov.ru>
+
+	* lib/Tcl/Tk.pm: 'declare_widget': optionally takes widget package
+	name where to declare Tcl::Tk widget; window ID not requested from
+	Tcl/Tk
+	'w_uniq': simplify, improve and comment w_uniq
+	'widget subs': change to 3-arg declare_widget where appropriate
+
+2005-01-14  Vadim Konovalov <vadimk@vkonovalov.ru>
+
+	* lib/Tcl/Tk.pm: 'new' fixed to better process multiple interpreters/
+	mainwindows, so tcltkdb able to debug another Tcl::Tk GUI
+	global package-level $mainwindow, $mwpath removed
+	many uses of $tkinterp removed
+	'pkg_require' now tracks interpreters
+	more documentation
+	'create_ptk_widget_sub' now gets interpreter as one of parameters (but
+	this will change after further fixes)
+	'awidgets' method removed
+	* demos/tcltkdb.pm: final fix
+
+2005-01-13  Vadim Konovalov <vadimk@vkonovalov.ru>
+
+	* lib/Tcl/Tk.pm: perlTk compatibility: make MainWindow to
+	allow $mw->configure(-title=>'....')
+	Start describing using any Tcl/Tk widget with perlTk syntax
+	* demos/tcltkdb.pm: make usable again
+	* demos/blt-tabnbook.pl: added demo file
+	* MANIFEST: mention adding demos/blt-tabnbook.pl
+	* ptk-compat.t: test for some $mw->configure
+
 2004-12-30  Jeff Hobbs  <jeffh@ActiveState.com>
 
 	* Makefile.PL: allow tclsh exe to be propagated by env var

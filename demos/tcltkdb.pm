@@ -769,6 +769,37 @@ use Data::Dumper ;
 use vars qw(@dbline) ;
 
 use Config ;
+
+sub DoBugReport {
+	my($str) = 'sourceforge.net/tracker/?atid=437609&group_id=43854&func=browse' ;
+	my(@browsers) = qw/netscape mozilla/ ;
+	my($fh, $pid, $sh) ;
+	
+	if( $isWin32 ) {
+	    $sh = '' ;
+	    @browsers = '"' . $ENV{'PROGRAMFILES'} . '\\Internet Explorer\\IEXPLORE.EXE' . '"' ;
+	    
+	}
+	else {
+	    $sh = 'sh' ;
+	    $str = "\'http://" . $str . "\'" ;
+	}
+
+	$fh = new FileHandle() ;
+
+	for( @browsers ) {
+	    $pid = open($fh, "$sh $_ $str 2&> /dev/null |") ;
+	    sleep(2) ; 
+	     waitpid $pid, 0 ;
+	     return if( $? == 0 ) ;
+	} 
+
+	print "##\n" ;
+	print "## Please submit a bug report through the following URL:\n" ;
+	print '##    http://sourceforge.net/tracker/?atid=437609&group_id=43854&func=browse', "\n" ;
+	print "##\n" ;	
+}
+
 #
 # Check to see if the package actually
 # exists. If it does import the routines
@@ -1195,7 +1226,7 @@ sub DoOpen {
   $listBox = $topLevel->Scrolled('Listbox', 
                                @Devel::tcltkdb::scrollbar_cfg,
                                @Devel::tcltkdb::expression_text_font,
-                                 'width' => 30)->pack(-side => 'top', -fill => 'both', -expand => 1) ;
+                                 -width => 30)->pack(-side => 'top', -fill => 'both', -expand => 1) ;
 
 
   # Bind a double click on the mouse button to the same action
@@ -1205,10 +1236,10 @@ sub DoOpen {
   
   $listBox->insert('end', @fList) ;
 
-  $topLevel->Button( text => "Okay", -command => $chooseSub, @Devel::tcltkdb::button_font,
+  $topLevel->Button( -text => "Okay", -command => $chooseSub, @Devel::tcltkdb::button_font,
                      )->pack(-side => 'left', -fill => 'both', -expand => 1) ;
 
-  $topLevel->Button( text => "Cancel", @Devel::tcltkdb::button_font,
+  $topLevel->Button( -text => "Cancel", @Devel::tcltkdb::button_font,
                      -command => sub { destroy $topLevel ; } )->pack(-side => 'left', -fill => 'both', -expand => 1) ;
 } # end of DoOpen
 
@@ -1262,6 +1293,7 @@ sub setup_menu_bar {
   # file menu in menu bar
 
   $items = [ [ 'command' => 'About...', -command => sub { $self->DoAbout() ; } ],
+						 [ 'command' => 'Bug Report...', -command => \&DoBugReport ],
              "-",
 
              [ 'command' => 'Open', -accelerator => 'Alt+O',
@@ -1281,7 +1313,7 @@ sub setup_menu_bar {
              [ 'command' => 'Goto Line...',
                -underline => 0,
                -accelerator => 'Alt-g',
-               -command => \&DB::RestoreState,
+               -command => sub { $self->GotoLine() ; },
                @dataDumperEnableOpt ] ,
 
              [ 'command' => 'Find Text...',
@@ -2109,14 +2141,14 @@ sub configure_text {
   $txt->tagConfigure("breaksetLine", -background => $mw->optionGet("breaktagcolor", "background") || $ENV{'PTKDB_BRKPT_COLOR'} || 'red') ;
   $txt->tagConfigure("breakdisabledLine", -background => $mw->optionGet("disabledbreaktagcolor", "background") || $ENV{'PTKDB_DISABLEDBRKPT_COLOR'} || 'green') ;
   
-  $txt->tagBind("breakableLine", '<Button-1>', \\'@xy', sub {Devel::tcltkdb::set_breakpoint_tag($txt,$self, '@'.Tcl::Ev('x').','.Tcl::Ev('y'), 1 )}  ) ;
-  $txt->tagBind("breakableLine", '<Shift-Button-1>', \\'@xy', sub { Devel::tcltkdb::set_breakpoint_tag($txt,$self, Tcl::Ev('@'), 0 )}  ) ;
+  $txt->tagBind("breakableLine", '<Button-1>', \\'xy', sub {my($ex,$ey)=($_[-2],$_[-1]);Devel::tcltkdb::set_breakpoint_tag($txt,$self, "\@$ex,$ey", 1 )} );
+  $txt->tagBind("breakableLine", '<Shift-Button-1>', \\'xy', sub {my($ex,$ey)=($_[-2],$_[-1]); Devel::tcltkdb::set_breakpoint_tag($txt,$self, "\@$ex,$ey", 0 )} ) ;
   
-  $txt->tagBind("breaksetLine", '<Button-1>',  \\'@xy', sub { Devel::tcltkdb::clear_breakpoint_tag($txt,$self, '@'.Tcl::Ev('x').','.Tcl::Ev('y') )}  ) ;
-  $txt->tagBind("breaksetLine", '<Shift-Button-1>',  \\'@xy', sub { Devel::tcltkdb::change_breakpoint_tag($txt, $self, '@'.Tcl::Ev('x').','.Tcl::Ev('y'), 0 )}  ) ;
+  $txt->tagBind("breaksetLine", '<Button-1>',  \\'xy', sub {my($ex,$ey)=($_[-2],$_[-1]); Devel::tcltkdb::clear_breakpoint_tag($txt,$self, "\@$ex,$ey", )}  ) ;
+  $txt->tagBind("breaksetLine", '<Shift-Button-1>',  \\'xy', sub {my($ex,$ey)=($_[-2],$_[-1]); Devel::tcltkdb::change_breakpoint_tag($txt, $self, "\@$ex,$ey", 0 )}  ) ;
   
-  $txt->tagBind("breakdisabledLine", '<Button-1>', \\'@xy', sub { Devel::tcltkdb::clear_breakpoint_tag($txt, $self, '@'.Tcl::Ev('x').','.Tcl::Ev('y') )}  ) ;
-  $txt->tagBind("breakdisabledLine", '<Shift-Button-1>', \\'@xy', sub { Devel::tcltkdb::change_breakpoint_tag($txt, $self, '@'.Tcl::Ev('x').','.Tcl::Ev('y'), 1) }  ) ;
+  $txt->tagBind("breakdisabledLine", '<Button-1>', \\'xy', sub {my($ex,$ey)=($_[-2],$_[-1]); Devel::tcltkdb::clear_breakpoint_tag($txt, $self, "\@$ex,$ey", )}  ) ;
+  $txt->tagBind("breakdisabledLine", '<Shift-Button-1>', \\'xy', sub {my($ex,$ey)=($_[-2],$_[-1]); Devel::tcltkdb::change_breakpoint_tag($txt, $self, "\@$ex,$ey", 1) }  ) ;
   
 } # end of configure_text
 
@@ -2161,7 +2193,7 @@ sub simplePromptBox {
 
  $Devel::tcltkdb::promptString = $defaultText ;
 
-  $entry = $top->Entry('-textvariable' => 'Devel::tcltkdb::promptString')->pack(-side => 'top', -fill => 'both', -expand => 1) ;
+  $entry = $top->Entry('-textvariable' => \$Devel::ptkdb::promptString)->pack(-side => 'top', -fill => 'both', -expand => 1) ;
   
   
   $okayBtn = $top->Button( -text => "Okay", @Devel::tcltkdb::button_font, -command => sub {  &$okaySub() ; $top->destroy ;}
@@ -2678,7 +2710,7 @@ use Carp ;
 
 sub set_file {
   my ($self, $fname, $line) = @_ ;
-  my ($lineStr, $offset, $text, $i, @text, $noCode) ;
+  my ($lineStr, $offset, $text, $i, @text, $noCode, $title) ;
   my (@breakableTagList, @nonBreakableTagList) ;
 
   return unless $fname ;  # we're getting an undef here on 'Restart...'
@@ -2701,8 +2733,9 @@ sub set_file {
     return ;
   } ;
 
-  $fname =~ s/^\-// ; # Tk does not like leadiing '-'s 
-  #TODO $self->{main_window}->configure('-title' => $fname) ;
+	$title = $fname ; # removing the - messes up stashes on -e invocations
+  $title =~ s/^\-// ; # Tk does not like leadiing '-'s 
+  $self->{main_window}->configure('-title' => $title) ;
 
   # Erase any existing text
 
@@ -2832,7 +2865,7 @@ sub GotoLine {
   # Bind a double click on the mouse button to the same action
   # as pressing the Okay button
 
-  $topLevel->Button( text => "Okay", -command => $okaySub, @Devel::tcltkdb::button_font,
+  $topLevel->Button( -text => "Okay", -command => $okaySub, @Devel::tcltkdb::button_font,
                      )->pack(-side => 'left', -fill => 'both', -expand => 1) ;
 
   #
@@ -2845,7 +2878,7 @@ sub GotoLine {
     delete $self->{goto_window} ; # remove the entry from our hash so we won't
   } ;
 
-  $topLevel->Button( text => "Dismiss", @Devel::tcltkdb::button_font,
+  $topLevel->Button( -text => "Dismiss", @Devel::tcltkdb::button_font,
                      -command => $dismissSub )->pack(-side => 'left', -fill => 'both', -expand => 1) ;
 
   $topLevel->protocol('WM_DELETE_WINDOW', sub { destroy $topLevel ; } ) ;
@@ -2995,7 +3028,7 @@ sub main_loop {
   my $i = 0;
  SWITCH: for ($self->{'event'} = 'null' ; ; $self->{'event'} = undef ) {
 
-   update;#VVV!!!!Tk::DoOneEvent(0);
+   $DB::window->{main_window}->update;
    next unless $self->{'event'} ;
 
    $evt = $self->{'event'} ;
@@ -3118,6 +3151,7 @@ sub updateEvalWindow {
   for( @result ) {
     if( $self->{hexdump_evals} ) {
       # eventually put hex dumper code in here
+      $self->{eval_results}->insert('end', hexDump($_)) ;
     }
     elsif( !$Devel::tcltkdb::DataDumperAvailable || !$Devel::tcltkdb::useDataDumperForEval ) {
       $str = "$_\n" ;
@@ -3137,6 +3171,45 @@ sub updateEvalWindow {
     $self->{eval_results}->insert('end', $str) ;
   }
 } # end of updateEvalWindow
+
+##
+## converts non printable chars to '.' for a string
+##
+sub printablestr {
+    return join "", map { (ord($_) >= 32 && ord($_) < 127) ? $_ : '.' } split //, $_[0] ;
+}
+
+##
+## hex dump utility function
+##
+sub hexDump {
+    my(@retList) ;
+    my($width) = 8 ;
+    my($offset) ;
+    my($len, $fmt, $n, @elems) ;
+
+    for( @_ ) {
+	my($str) ;
+	$len = length $_ ;
+	
+	while($len) {
+	    $n = $len >= $width ? $width : $len ;
+
+	    $fmt = "\n%04X  " . ("%02X " x $n ) . ( '   ' x ($width - $n) ) . " %s" ;
+	    @elems = map ord, split //, (substr $_, $offset, $n) ;
+	    $str .= sprintf($fmt, $offset, @elems, printablestr(substr $_, $offset, $n)) ;
+	    $offset += $width ;
+
+	    $len -= $n ;
+	} # while
+
+	push @retList, $str ;
+    } # for
+
+    return $retList[0] unless wantarray ;
+    return @retList ;
+} # end of hd
+
 
 sub setupEvalWindow {
   my($self) = @_ ;
@@ -3184,6 +3257,7 @@ sub setupEvalWindow {
                )->pack(-side => 'left', -fill => 'x', -expand => 1) ;
 
   $top->Button(-text => 'Dismiss', -command => $dismissSub)->pack(-side => 'left', -fill => 'x', -expand => 1) ;
+  $top->Checkbutton(-text => 'Hex', -variable => \$self->{hexdump_evals})->pack(-side => 'left') ;
 
 } # end of setupEvalWindow ;
 
@@ -3487,7 +3561,7 @@ package DB ;
 
 use vars '$VERSION', '$header' ;
 
-$VERSION = '1.1086' ;
+$VERSION = '1.1091' ;
 $header = "tcltkdb.pm version $DB::VERSION";
 $DB::window->{current_file} = "" ;
 
@@ -4288,7 +4362,52 @@ sub DB {
 
 1 ; # return true value
 
-# $Log: tcltkdb.pm,v $
+# ptkdb.pm,v
+# Revision 1.15  2004/03/31 02:08:40  aepage
+# fixes for various lacks of backwards compatiblity in Tk804
+# Added a 'bug report' item to the File Menu.
+#
+# Revision 1.14  2003/11/20 01:59:40  aepage
+# version fix
+#
+# Revision 1.12  2003/11/20 01:46:45  aepage
+# Hex Dumper and correction of some parameters for Tk804.025_beta6
+#
+# Revision 1.11  2003/06/26 13:42:49  aepage
+# fix for chars at the end of win32 platforms.
+#
+# Revision 1.10  2003/05/12 14:38:34  aepage
+# win32 pushback
+#
+# Revision 1.9  2003/05/12 13:46:46  aepage
+# optmization of win32 line fixing
+#
+# Revision 1.8  2003/05/11 23:42:20  aepage
+# fix to remove stray win32 chars
+#
+# Revision 1.7  2003/05/11 23:15:26  aepage
+# email address changes, fixes for perl 5.8.0
+#
+# Revision 1.6  2002/11/28 19:17:43  aepage
+# Changed many options to widgets and pack from bareword or 'bareword'
+# to -bareword to support Tk804.024(Devel).
+#
+# Revision 1.5  2002/11/25 23:47:03  aepage
+# A perl debugger package is required to define a subroutine name 'sub'.
+# This routine is a 'proxy' for handling subroutine calls and allows the
+# debugger pacakage to track subroutine depth so that it can implement
+# 'step over', 'step in' and 'return' functionality.  It must also
+# handle the same context as the proxied routine; it must return a
+# scalar where a scalar was being expected, an array where an array is
+# being expected and a void where a void was being expected.  Ptkdb was
+# not handling the case for void.  99.9% of the time this will have no
+# ill effects although it is being handled incorrectly. Ref Programming
+# Perl 3rd Edition pg 827
+#
+# Revision 1.4  2002/10/24 17:07:10  aepage
+# fix for warning for undefined value assigend to typeglob during restart
+#
+# Revision 1.3  2002/10/20 23:49:51  aepage
 # Revision 1.3  2004/04/24 13:52:37  vkonovalov
 # 	* demos/tcltkdb.pm: Tcl::Tk compatibility fixes.
 #

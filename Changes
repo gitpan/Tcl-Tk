@@ -1,5 +1,15 @@
 Revision history for Perl extension Tcl::Tk.
 
+0.86    to-be-2005
+	- ...........
+	- $widget->_method(...) as faster but limited version of
+	  $widget->method(...)
+	- now module able to deal with multiple interpreters, having
+	  widgets with same names
+	- more perlTk compatibility
+	- documentation improvements
+	- more demos/ changes
+
 0.85    31-dec-2004
 	- new pkg_require command, deprecates need_tk
 	- minor test fixes for portability

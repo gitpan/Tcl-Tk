@@ -5,7 +5,7 @@ use Test;
 
 BEGIN
   {
-   plan test => 5;
+   plan test => 7;
   };
 
 use Tcl::Tk qw/:perlTk/;
@@ -88,6 +88,10 @@ my @kids = $mw->children;
 ok(@kids, 2);
 my $txt = $kids[1]->cget("-text");
 ok($txt , "Ring the bell!");
+
+$mw->configure(-title=>'new title',-cursor=>'star');
+ok($mw->cget('-title'), 'new title');
+ok($mw->cget('-cursor'), 'star');
 
 $mw->after(3000,sub{$mw->destroy});
 MainLoop;
