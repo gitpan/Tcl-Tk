@@ -3,7 +3,7 @@
 # This demonstration script creates a canvas that displays the
 # canvas item types.
 #
-# RCS: @(#) $Id: items.tcl,v 1.3 2001/06/14 10:56:58 dkf Exp $
+# RCS: @(#) $Id: items.pl,v 1.2 2004/03/22 23:59:57 hobbs2 Exp $
 
 our $widgetDemo;
 unless ($widgetDemo) {

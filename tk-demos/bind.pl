@@ -3,7 +3,7 @@
 # This demonstration script creates a text widget with bindings set
 # up for hypertext-like effects.
 #
-# RCS: @(#) $Id: bind.tcl,v 1.2 1998/09/14 18:23:26 stanton Exp $
+# RCS: @(#) $Id: bind.pl,v 1.2 2004/03/22 23:59:57 hobbs2 Exp $
 
 our $widgetDemo;
 unless ($widgetDemo) {

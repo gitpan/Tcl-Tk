@@ -3,7 +3,7 @@
 # This demonstration script is the same as the entry1.tcl script
 # except that it creates scrollbars for the entries.
 #
-# RCS: @(#) $Id: entry2.tcl,v 1.2 1998/09/14 18:23:28 stanton Exp $
+# RCS: @(#) $Id: entry2.pl,v 1.2 2004/03/22 23:59:57 hobbs2 Exp $
 
 our $widgetDemo;
 unless ($widgetDemo) {

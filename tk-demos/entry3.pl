@@ -4,7 +4,7 @@
 # permitted input is constrained in some way.  It also shows off a
 # password entry.
 #
-# RCS: @(#) $Id$
+# RCS: @(#) $Id: entry3.pl,v 1.2 2004/03/22 23:59:57 hobbs2 Exp $
 
 our $widgetDemo;
 unless ($widgetDemo) {

@@ -4,7 +4,7 @@
 # allow you to load a file into a text widget, then perform searches
 # on that file.
 #
-# RCS: @(#) $Id: search.tcl,v 1.2 1998/09/14 18:23:30 stanton Exp $
+# RCS: @(#) $Id: search.pl,v 1.2 2004/03/22 23:59:57 hobbs2 Exp $
 
 our $widgetDemo;
 unless ($widgetDemo) {

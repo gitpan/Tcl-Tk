@@ -3,14 +3,15 @@ Changes		changes file
 ChangeLog	detailed ChangeLog file
 MANIFEST	This list of files
 Makefile.PL	Tcl::Tk extension makefile writer
-ceMakefile.pl	makefile writer for WinCE cross-compilation
 README		Introduction to the Tcl::Tk extension
 lib/Tcl/Tk.pm	Tcl::Tk extension module
 Tk.xs		Tcl::Tk extension implementation
 typemap		Tcl::Tk extension types
 META.yml
 t/after.t
+t/optmenu.t	adopted file from perlTk suite
 t/photo.t
+t/geomgr.t	adopted file from perlTk suite
 t/folder.xpm
 t/Tk.xbm
 t/Xcamel.gif

@@ -2,7 +2,7 @@
 #
 # This demonstration script creates a dialog box with a global grab.
 #
-# RCS: @(#) $Id: dialog2.tcl,v 1.3 2001/11/05 10:13:53 dkf Exp $
+# RCS: @(#) $Id: dialog2.tcl,v 1.2 2004/03/22 23:59:57 hobbs2 Exp $
 
 after idle {
     .dialog2.msg configure -wraplength 4i

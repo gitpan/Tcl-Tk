@@ -2,7 +2,7 @@
 #
 # This demonstration script creates several spinbox widgets.
 #
-# RCS: @(#) $Id$
+# RCS: @(#) $Id: spin.pl,v 1.2 2004/03/22 23:59:57 hobbs2 Exp $
 
 our $widgetDemo;
 unless ($widgetDemo) {

@@ -23,8 +23,10 @@ script.
    make
    make install
 
-In rare case when you do cross-compiling for WinCE, you need to edit and
-use ceMakefile.PL
+In rare case when you do cross-compiling for WinCE, you need to edit
+Makefile.PL to reflect your paths, and then invoke as
+  perl -MCross=[your-cross-name] Makefile.PL
+Please see into Makefile.PL for more details on that.
 
 AUTHOR
     Malcolm Beattie	mbeattie@sable.ox.ac.uk
@@ -32,6 +34,7 @@ AUTHOR
 MAINTAINERS
     Vadim Konovalov	vkonovalov@peterstar.ru
     Jeff Hobbs
+    Gisle Aas
 
 LICENSE
     This program is free software; you can redistribute it and/or modify

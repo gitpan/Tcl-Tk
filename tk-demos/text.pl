@@ -3,7 +3,7 @@
 # This demonstration script creates a text widget that describes
 # the basic editing functions.
 #
-# RCS: @(#) $Id: text.tcl,v 1.3 2001/11/15 11:55:26 dkf Exp $
+# RCS: @(#) $Id: text.pl,v 1.2 2004/03/22 23:59:57 hobbs2 Exp $
 
 our $widgetDemo;
 unless ($widgetDemo) {

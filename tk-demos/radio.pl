@@ -3,7 +3,7 @@
 # This demonstration script creates a toplevel window containing
 # several radiobutton widgets.
 #
-# RCS: @(#) $Id: radio.tcl,v 1.4 2001/11/12 14:32:50 dkf Exp $
+# RCS: @(#) $Id: radio.pl,v 1.2 2004/03/22 23:59:57 hobbs2 Exp $
 
 our $widgetDemo;
 unless ($widgetDemo) {

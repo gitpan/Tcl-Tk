@@ -3,7 +3,7 @@
 # This demonstration script creates a listbox widget that displays
 # the names of the 50 states in the United States of America.
 #
-# RCS: @(#) $Id: states.tcl,v 1.2 1998/09/14 18:23:30 stanton Exp $
+# RCS: @(#) $Id: states.pl,v 1.2 2004/03/22 23:59:57 hobbs2 Exp $
 
 our $widgetDemo;
 unless ($widgetDemo) {

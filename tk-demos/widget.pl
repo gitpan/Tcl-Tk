@@ -7,7 +7,7 @@
 # ".tcl" files is this directory, which are sourced by this script
 # as needed.
 #
-# RCS: @(#) $Id: widget,v 1.9 2003/02/19 16:13:15 dkf Exp $
+# RCS: @(#) $Id: widget.pl,v 1.2 2004/03/22 23:59:57 hobbs2 Exp $
 
 use strict;
 use Tcl;

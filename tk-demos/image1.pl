@@ -2,7 +2,7 @@
 #
 # This demonstration script displays two image widgets.
 #
-# RCS: @(#) $Id: image1.tcl,v 1.2 1998/09/14 18:23:28 stanton Exp $
+# RCS: @(#) $Id: image1.pl,v 1.2 2004/03/22 23:59:57 hobbs2 Exp $
 
 our $widgetDemo;
 unless ($widgetDemo) {

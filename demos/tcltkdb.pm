@@ -4288,6 +4288,9 @@ sub DB {
 1 ; # return true value
 
 # $Log: tcltkdb.pm,v $
+# Revision 1.2  2004/04/04 22:23:34  vkonovalov
+# made some ptkdb::xxx=>tcltkdb changes to unfrustrate indexer
+#
 # Revision 1.1  2004/03/22 23:59:56  hobbs2
 # VKON 0.74 release update snapshot
 #

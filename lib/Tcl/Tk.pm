@@ -5,9 +5,9 @@ use Tcl;
 use Exporter;
 use DynaLoader;
 use vars qw(@ISA @EXPORT_OK %EXPORT_TAGS);
-@ISA = qw(Exporter DynaLoader);
+@ISA = qw(DynaLoader Exporter Tcl);
 
-$Tcl::Tk::VERSION = '0.76';
+$Tcl::Tk::VERSION = '0.77';
 
 # For users that want to ensure full debugging from initial use call,
 # including the checks for other Tk modules loading following Tcl::Tk
@@ -15,6 +15,7 @@ $Tcl::Tk::VERSION = '0.76';
 #
 # BEGIN { $Tcl::Tk::DEBUG = 1; }
 #
+$Tcl::Tk::DEBUG ||= 0;
 sub DEBUG() { $Tcl::Tk::DEBUG; }
 
 if (DEBUG()) {
@@ -339,17 +340,19 @@ sub new {
 	$sync = 0;
     }
     $i = new Tcl;
+    bless $i, $class;
     if (!defined($tkinterp)) {
-        $i->CreateMainWindow($display, $name, $sync);
-        bless $mainwindow, 'Tcl::Tk::Widget::MainWindow';
+	# CreateMainWindow is no longer necessary (was for pre-Tk8)
+	#$i->CreateMainWindow($display, $name, $sync);
+	bless $mainwindow, 'Tcl::Tk::Widget::MainWindow';
 	$wint{''} = $wint{'.'} = $i;
     }
     $i->SetVar2("env", "DISPLAY", $display, Tcl::GLOBAL_ONLY);
     $i->SetVar("argv0", $0, Tcl::GLOBAL_ONLY);
     $i->SetVar("argc", scalar(@main::ARGV), Tcl::GLOBAL_ONLY);
     if (defined $::tcl_library) {
-      # hack to redefine search path for TCL installation
-      $i->SetVar('tcl_library',$::tcl_library);
+	# hack to redefine search path for TCL installation
+	$i->SetVar('tcl_library',$::tcl_library);
     }
     $i->ResetResult();
     push(@argv, "--", @ARGV);
@@ -358,17 +361,22 @@ sub new {
     $i->SetVar("tcl_interactive", "0", Tcl::GLOBAL_ONLY);
     $i->Init();
     $i->Tk_Init();
+    $Tcl::Tk::TK_VERSION = $i->GetVar("tk_version");;
+    # Only do this for DEBUG() ?
+    $Tk::VERSION = $Tcl::Tk::TK_VERSION;
+    $Tk::VERSION =~ s/^(\d)\.(\d)/${1}0$2/;
+    print STDERR "USING Tk $Tcl::Tk::TK_VERSION ($Tk::VERSION)\n" if DEBUG();
     #'###???'&&   bless $i, 'Tcl::Tk';
     $tkinterp = $i;
     return $i;
 }
 
 sub tkinit {
-    $tkinterp = new(@_);
+    $tkinterp = Tcl::Tk->new(@_);
     $mainwindow;
 }
 sub MainWindow {
-    $tkinterp = new(@_);
+    $tkinterp = Tcl::Tk->new(@_);
     $mainwindow;
 }
 
@@ -529,7 +537,8 @@ sub Exists($) {
     }
     return $tkinterp->call('winfo','exists',$wid);
 }
-# do this only when tk_gestapo on? In normal case Tcl::Tk::Exists should be used...
+# do this only when tk_gestapo on?
+# In normal case Tcl::Tk::Exists should be used.
 *{Tk::Exists} = \&Tcl::Tk::Exists;
 
 sub widgets {
@@ -623,33 +632,31 @@ sub need_tk {
     my $int = shift;
     my $what = shift;
     return if $preloaded_tk{$what};
-    if ($what eq 'Tix') {
-	$int->call("package", "require", "Tix");
-    }
-    elsif ($what eq 'Img') {
-	$int->call("package", "require", "Img");
-    }
-    elsif ($what eq 'BWidget') {
-	$int->Eval("package require BWidget;ScrolledWindow::use"); # TODO
-    }
-    elsif ($what eq 'Balloon') {
-	$int->call("package", "require", "Tix") unless $preloaded_tk{'Tix'};
+
+    print STDERR "PKG REQUIRE $what\n" if DEBUG();
+    if ($what eq 'Balloon') {
+	$int->need_tk('Tix');
 	$int->Eval("destroy [tixBalloon .___ptk_bln]"); #TODO
     }
-    elsif ($what eq 'NoteBook') {
-	$int->call("package", "require", "Tix") unless $preloaded_tk{'Tix'};
-	$int->Eval("destroy [tixNoteBook .___ptk_nb]"); #TODO
-    }
-    elsif ($what eq 'HList') {
-	$int->call("package", "require", "Tix") unless $preloaded_tk{'Tix'};
-	$int->Eval("destroy [tixHList .___ptk_hlist]"); #TODO
+    elsif ($what eq 'tk_optionMenu') {
+	$int->Eval("destroy [tk_optionMenu .___ptk_om ghgjgh 1]"); #TODO
     }
     elsif ($what eq 'Tree') {
-	$int->call("package", "require", "Tix") unless $preloaded_tk{'Tix'};
+	$int->need_tk('Tix');
 	$int->Eval("destroy [tixTree .___ptk_tree]"); #TODO
     }
-    elsif ($what eq 'tktable') {
-	$int->call("package", "require", "Tktable"); #TODO
+    elsif ($what eq 'tixNoteBook') {
+	$int->need_tk('Tix');
+	$int->Eval("destroy [tixNoteBook .___ptk_notebook]"); #TODO
+    }
+    elsif ($what eq 'ScrolledWindow'
+	   || $what eq 'ListBox'
+	   || $what eq 'ComboBox'
+	   || $what eq 'BWTree') {
+	$int->need_tk('BWidget');
+	my $use = $what . "::use";
+	$use =~ s/^BW//;
+	$int->Eval($use);
     }
     elsif ($what eq 'pure-perl-Tk') {
         eval <<"EOS";
@@ -662,8 +669,9 @@ use Tcl::Tk::Table;
 EOS
     }
     else {
-	die "need_tk do not recognize resource $what";
+	$int->icall("package", "require", $what);
     }
+
     $preloaded_tk{$what}++;
 }
 
@@ -700,7 +708,7 @@ sub DEBUG { Tcl::Tk::DEBUG(); }	# do not let AUTOLOAD catch this method
 
 sub iconimage {
     # this should set the wm iconimage/iconbitmap with an image
-    warn "iconimage not yet implemented";
+    warn "NYI: iconimage";
 };
 
 sub path {${$_[0]}}
@@ -724,6 +732,13 @@ sub grid {
     my $self = shift;
     $wint{$$self}->call("grid",$$self,@_);
     $self;
+}
+sub gridSlaves {
+    # grid slaves returns widget names, so map them to their objects
+    my $self = shift;
+    my $int  = $wint{$$self};
+    my @wids = $int->call("grid","slaves",$$self,@_);
+    map($int->widget($_), @wids);
 }
 sub place {
     my $self = shift;
@@ -771,12 +786,7 @@ sub destroy {
     $wint{$$self}->call('destroy',$wp,@_);
 }
 
-# for compatibility (TODO -- these 'wm/winfo' methods could be AUTOLOADed)
-sub geometry {
-    my $self = shift;
-    my $wp = $self->path;
-    $wint{$$self}->call('wm','geometry',$wp,@_);
-}
+# for compatibility (TODO -- more methods could be AUTOLOADed)
 sub GeometryRequest {
     my $self = shift;
     my $wp = $self->path;
@@ -786,7 +796,7 @@ sub GeometryRequest {
 sub OnDestroy {
     my $self = shift;
     my $wp = $self->path;
-    $wint{$$self}->call('bind','Destroy',$wp,@_);
+    $wint{$$self}->call('bind','<Destroy>',$wp,@_);
 }
 sub grab {
     my $self = shift;
@@ -798,62 +808,8 @@ sub grabRelease {
     my $wp = $self->path;
     $wint{$$self}->call('grab','release',$wp,@_);
 }
-sub protocol {
-    my $self = shift;
-    my $wp = $self->path;
-    $wint{$$self}->call('wm','protocol',$wp,@_);
-}
-sub title {
-    my $self = shift;
-    my $wp = $self->path;
-    $wint{$$self}->call('wm','title',$wp,@_);
-}
-sub reqwidth {
-    my $self = shift;
-    my $wp = $self->path;
-    return $wint{$$self}->call('winfo','reqwidth',$wp,@_);
-}
-sub reqheight {
-    my $self = shift;
-    my $wp = $self->path;
-    return $wint{$$self}->call('winfo','reqheight',$wp,@_);
-}
-sub screenheight {
-    my $self = shift;
-    my $wp = $self->path;
-    return $wint{$$self}->call('winfo','screenheight',$wp,@_);
-}
-sub screenwidth {
-    my $self = shift;
-    my $wp = $self->path;
-    return $wint{$$self}->call('winfo','screenwidth',$wp,@_);
-}
-sub height {
-    my $self = shift;
-    my $wp = $self->path;
-    $wint{$$self}->call('winfo', 'height', $wp, @_);
-}
-sub width {
-    my $self = shift;
-    my $wp = $self->path;
-    $wint{$$self}->call('winfo', 'width', $wp, @_);
-}
-sub rgb {
-    my $self = shift;
-    my $wp = $self->path;
-    $wint{$$self}->call('winfo', 'rgb', $wp, @_);
-}
-sub children {
-    my $self = shift;
-    my $wp = $self->path;
-    return $wint{$$self}->call('winfo','children',$wp,@_);
-}
-sub packPropagate {
-    my $self = shift;
-    my $wp = $self->path;
-    $wint{$$self}->call('pack','propagate',$wp,@_);
-}
 sub packAdjust {
+    # old name, becomes pack configure
     my $self = shift;
     my $wp = $self->path;
     $wint{$$self}->call('pack','configure',$wp,@_);
@@ -863,25 +819,9 @@ sub optionGet {
     my $wp = $self->path;
     $wint{$$self}->call('option','get',$wp,@_);
 }
-sub fontNames {
-    my $self = shift;
-    $wint{$$self}->call('font','names',@_);
-}
-sub idletasks {
-    my $self = shift;
-    $wint{$$self}->call('update','idletasks',@_);
-}
 sub update {
     my $self = shift;
     $wint{$$self}->update;
-}
-sub font {
-    my $self = shift;
-    $wint{$$self}->call('font', @_);
-}
-sub waitVariable {
-    my $self = shift;
-    $wint{$$self}->call('tkwait', 'variable', @_);
 }
 sub ItemStyle {
     my $self = shift;
@@ -904,6 +844,21 @@ sub getSaveFile {
     my %args = @_;
     $args{'-parent'} = $self->path unless defined $args{'-parent'};
     $wint{$$self}->call('tk_getSaveFile', %args);
+}
+sub chooseDirectory {
+    my $self = shift;
+    my %args = @_;
+    $args{'-parent'} = $self->path unless defined $args{'-parent'};
+    $wint{$$self}->call('tk_chooseDirectory', %args);
+}
+sub messageBox {
+    my $self = shift;
+    my %args = @_;
+    $args{'-parent'} = $self->path unless defined $args{'-parent'};
+    # messageBox should handle pTk's "YesNo" and return "Yes" in
+    # addition to Tk's standard all-lc in/out.
+    #$args{'-type'} = lc $args{'-type'} if defined $args{'-type'};
+    $wint{$$self}->call('tk_messageBox', %args);
 }
 
 # TODO all Busy subs
@@ -930,18 +885,18 @@ sub Unbusy {
 # by 10%.
 sub Darken
 {
- my ($w,$color,$percent) = @_;
- my @l = $w->rgb($color);
- my $red = $l[0]/256;
- my $green = $l[1]/256;
- my $blue = $l[2]/256;
- $red = int($red*$percent/100);
- $red = 255 if ($red > 255);
- $green = int($green*$percent/100);
- $green = 255 if ($green > 255);
- $blue = int($blue*$percent/100);
- $blue = 255 if ($blue > 255);
- sprintf('#%02x%02x%02x',$red,$green,$blue)
+    my ($w,$color,$percent) = @_;
+    my @l = $w->rgb($color);
+    my $red = $l[0]/256;
+    my $green = $l[1]/256;
+    my $blue = $l[2]/256;
+    $red = int($red*$percent/100);
+    $red = 255 if ($red > 255);
+    $green = int($green*$percent/100);
+    $green = 255 if ($green > 255);
+    $blue = int($blue*$percent/100);
+    $blue = 255 if ($blue > 255);
+    sprintf('#%02x%02x%02x',$red,$green,$blue);
 }
 
 
@@ -985,12 +940,15 @@ sub Getimage {
 	    last if -f $path;
 	}
 	next unless -f $path;
-	print STDERR "Getimage: FOUND IMAGE $path\n" if DEBUG();
+	print STDERR "Getimage: FOUND IMAGE $path\n" if DEBUG() > 1;
 	if ($ext eq "xpm") {
 	    $int->need_tk('Img');
 	}
-	$images->{$name} = $int->call('image', 'create', $image_formats{$ext},
-				      -format => $ext, -file => $path);
+	my @args = ('image', 'create', $image_formats{$ext}, -file => $path);
+	if ($image_formats{$ext} ne "bitmap") {
+	    push @args, -format => $ext;
+	}
+	$images->{$name} = $int->call(@args);
 	return $images->{$name};
     }
 
@@ -1016,62 +974,92 @@ sub w_uniq {
     if (!defined($type)) {
 	my ($package, $callerfile, $callerline) = caller;
 	warn "$callerfile:$callerline called w_uniq(@_)";
+	$type = "unk";
     }
     $gwcnt++ while exists $wint{"$$self.$type$gwcnt"};
     return "$$self.$type$gwcnt";
 }
 
-# perlTk<->Tcl::Tk names
-my %ptk2tcltk = (
-    #Table => '*perlTk/Table',
-    Table => 'table',
-    Button => 'button',
-    Checkbutton => 'checkbutton',
-    Radiobutton => 'radiobutton',
-    Menubutton => 'menubutton',
-    Panedwindow => 'panedwindow',
-    Text => 'text',
-    ROText => 'text',
-    TextUndo => 'text',
-    Canvas => 'canvas',
-    #LabFrame => 'labelframe',
-    Label => 'label',
-    Listbox => 'listbox',
-    Entry => 'entry',
-    Message => 'message',
-    Frame => 'frame',
-    Toplevel => 'toplevel',
-    NoteBook => 'tixNoteBook',
-    HList => 'tixHList',
-);
+# perlTk<->Tcl::Tk mapping in form [widget, wprefix, ?package?]
+# These will be looked up 1st in AUTOLOAD
+my %ptk2tcltk =
+    (
+     Button      => ['button', 'btn',],
+     Checkbutton => ['checkbutton', 'cb',],
+     Canvas      => ['canvas', 'can',],
+     Entry       => ['entry', 'ent',],
+     Frame       => ['frame', 'f',],
+     LabelFrame  => ['labelframe', 'lf',],
+     #LabFrame    => ['labelframe', 'lf',],
+     Label       => ['label', 'lbl',],
+     Listbox     => ['listbox', 'lb',],
+     Message     => ['message', 'msg',],
+     Menubutton  => ['menubutton', 'mbtn',],
+     Panedwindow => ['panedwindow', 'pw',],
+     Photo	 => ['image', 'pht',],
+     Radiobutton => ['radiobutton', 'rb',],
+     ROText	 => ['text', 'rotext',],
+     Text        => ['text', 'text',],
+     TextUndo    => ['text', 'utext',],
+     Toplevel    => ['toplevel', 'top',],
+
+     #Table       => ['*perlTk/Table',]
+     Table       => ['table', 'tbl', 'Tktable'],
+
+     ComboBox    => ['ComboBox', 'combo', 'ComboBox'],
+     ListBox     => ['ListBox', 'lb', 'ListBox'],
+     BWTree      => ['Tree', 'bwtree', 'BWTree'],
+     ScrolledWindow => ['ScrolledWindow', 'sw', 'ScrolledWindow'],
+
+     TileNoteBook => ['tile::notebook', 'tnb', 'tile'],
+
+     Treectrl    => ['treectrl', 'treectrl', 'treectrl'],
+
+     HList       => ['tixHList', 'hlist', 'Tix'],
+     NoteBook    => ['tixNoteBook', 'nb', 'Tix'],
+     );
+
+# Mapping of pTk camelCase names to Tcl commands.
+# These do not require the actual widget name.
+# These will be looked up 2nd in AUTOLOAD
+# $w->mapCommand(...) => @qwargs ...
+my %ptk2tcltk_mapper =
+    (
+     "optionAdd"        => [ qw(option add) ],
+     "font"             => [ qw(font) ],
+     "fontCreate"       => [ qw(font create) ],
+     "fontNames"        => [ qw(font names) ],
+     "waitVariable"     => [ qw(vwait) ], # was tkwait variable
+     "idletasks"        => [ qw(update idletasks) ],
+     );
+
+# wm or winfo subroutines, to be checked 4th in AUTOLOAD
+# $w->wmcommand(...) => wm|winfo wmcommand $w ...
 my %ptk2tcltk_wm =
     (
-     "minsize" => 1,
-     "geometry" => 1
+     "deiconify"     => 'wm',
+     "geometry"      => 'wm', # note 'winfo geometry' isn't included
+     "group"         => 'wm',
+     "iconify"       => 'wm',
+     "minsize"       => 'wm',
+     "maxsize"       => 'wm',
+     "protocol"      => 'wm',
+     "resizable"     => 'wm',
+     "stackorder"    => 'wm',
+     "state"         => 'wm',
+     "title"         => 'wm',
+     "transient"     => 'wm',
+     "withdraw"      => 'wm',
+     "reqwidth"      => 'winfo',
+     "reqheight"     => 'winfo',
+     "screenwidth"   => 'winfo',
+     "screenheight"  => 'winfo',
+     "width"         => 'winfo',
+     "height"        => 'winfo',
+     "rgb"           => 'winfo',
+     "children"      => 'winfo',
      );
-my %ptk2tcltk_pref =
-    qw(
-       Button		b
-       Canvas		can
-       Checkbutton	cb
-       Entry		ent
-       Frame		f
-       HList		hlist
-       Label		lbl
-       Listbox		lb
-       LabFrame		lf
-       Menubutton	mb
-       Message		msg
-       NoteBook		nb
-       Panedwindow	pw
-       Radiobutton	rb
-       ROText		rt
-       Table		tbl
-       Text		txt
-       TextUndo		utxt
-       Toplevel		top
-       Tree		tree
-       ); #prefix for autogen. name
+
 my $ptk_w_names = join '|', sort keys %ptk2tcltk;
 
 #  create_ptk_widget_sub creates subroutine similar to following:
@@ -1084,27 +1072,24 @@ my $ptk_w_names = join '|', sort keys %ptk2tcltk;
 #}
 my %replace_options =
     (
-     tixHList => {separator=>'-separator'},
-     table => {-columns=>'-cols'},
-     toplevel => {-title=>sub{shift->title(@_)},OnDestroy=>sub{}},
+     tixHList   => {separator=>'-separator'},
+     table      => {-columns=>'-cols'},
+     toplevel   => {-title=>sub{shift->title(@_)},OnDestroy=>sub{}},
      labelframe => {-label=>'-text', -labelside => undef},
      );
 my %pure_perl_tk = (); # hash to keep track of pure-perl widgets
 
 sub create_ptk_widget_sub {
     my ($wtype) = @_;
-    my ($ttktype,$wpref) = ($ptk2tcltk{$wtype},$ptk2tcltk_pref{$wtype});
+    my ($ttktype,$wpref,$tpkg) = @{$ptk2tcltk{$wtype}};
+    $wpref ||= lcfirst $wtype;
 
-    if ($wtype eq 'HList') {$tkinterp->need_tk('HList')}
-    elsif ($wtype eq 'Tree') {$tkinterp->need_tk('Tree')}
-    elsif ($ttktype =~ /^tix/) {$tkinterp->need_tk('Tix');}
-    elsif ($wtype eq 'Photo') {$tkinterp->need_tk('Img')}
-    elsif ($wtype eq 'Table') {
-	#$tkinterp->need_tk('pure-perl-Tk');
-	#$tkinterp->need_tk('ptk-Table');
-	$tkinterp->need_tk('tktable');
-    }
-    if ($ttktype=~s/^\*perlTk\///) {
+    if ($tpkg) { $tkinterp->need_tk($tpkg); }
+    # we need a way to better handle dependencies for "managed" widgets
+    elsif ($wtype eq 'Tree')       { $tkinterp->need_tk('Tree'); }
+    elsif ($wtype eq 'Photo')      { $tkinterp->need_tk('Img'); }
+
+    if ($ttktype =~ s/^\*perlTk\///) {
 	# should create pure-perlTk widget and bind it to Tcl variable so that
 	# anytime a method invoked it will be redirected to Perl
 	return sub {
@@ -1146,10 +1131,9 @@ sub create_ptk_widget_sub {
     }
     return sub {
 	my $self = shift; # this will be a parent widget for newer widget
-	my $int = $wint{$$self};
+	my $int  = $wint{$$self};
         my $w    = w_uniq($self, $wpref); # create uniq pref's widget id
-	#print STDERR "CREATE $ttktype $w @_\n" if DEBUG();
-	my $wid=$int->declare_widget($int->call($ttktype,$w,@_));
+	my $wid  = $int->declare_widget($int->call($ttktype,$w,@_));
 	bless $wid, "Tcl::Tk::Widget::$wtype";
 	return $wid;
     };
@@ -1170,13 +1154,48 @@ sub LabFrame {
 	}
     }
     my $lf = $int->declare_widget($int->call($ttktype, $w, %args));
-    $special_widget_abilities{$$lf} = {
+    my $wtype = 'LabFrame';
+    create_widget_package($wtype);
+    create_method_in_widget_package($wtype,
 	Subwidget => sub {
 	    print STDERR "LabFrame $$lf ignoring Subwidget(@_)\n" if DEBUG();
 	    return $lf;
 	},
-    };
+    );
+    bless $lf, "Tcl::Tk::Widget::$wtype";
     return $lf;
+}
+sub ROText {
+    # Read-only text
+    # This just needs to intercept the programmatic insert/delete
+    # and reenable the text widget for that duration.
+    my $self = shift; # this will be a parent widget for newer ROText
+    my $int  = $wint{$$self};
+    my $w    = w_uniq($self, "rotext"); # create uniq pref's widget id
+    my $text = $int->declare_widget($int->call('text', $w, @_));
+    my $wtype = 'ROText';
+    create_widget_package($wtype);
+    create_method_in_widget_package($wtype,
+	insert => sub {
+	    my $wid = shift;
+	    my $int = $wint{$$wid};
+	    $text->configure(-state => "normal");
+	    # avoid recursive call by going directly to interp
+	    $int->call($text, 'insert', @_);
+	    $text->configure(-state => "disabled");
+	},
+	delete => sub {
+	    my $wid = shift;
+	    my $int = $wint{$$wid};
+	    $text->configure(-state => "normal");
+	    # avoid recursive call by going directly to interp
+	    $int->call($text, 'delete', @_);
+	    $text->configure(-state => "disabled");
+	}
+    );
+    $text->configure(-state => "disabled");
+    bless $text, "Tcl::Tk::Widget::$wtype";
+    return $text;
 }
 
 # menu compatibility
@@ -1195,7 +1214,7 @@ sub _addcascade {
     my $mnu = shift;
     my $int = $wint{$$mnu};
     my $smnu = Menu($mnu); # return unique widget id
-    print STDERR "cascade(@_) of $$mnu is $$smnu\n" if DEBUG();
+    print STDERR "MENU CASCADE(@_) of $$mnu is $$smnu\n" if DEBUG() > 1;
     my %args = @_;
     my $tearoff = delete $args{'-tearoff'};
     if (defined($tearoff)) {
@@ -1252,29 +1271,51 @@ sub Menubutton {
     my $mnu  = $int->menu($w . ".m");
     _process_menuitems($int,$mnu,$mis);
     $int->update if DEBUG();
+    if (defined($tearoff)) {
+        $mnu->configure(-tearoff => $tearoff);
+    }
 
-    # TODO implement better:
-    $special_widget_abilities{$$mnub} = {
+    my $wtype = 'Menubutton';
+    create_widget_package($wtype);
+    create_method_in_widget_package($wtype,
 	command=>sub {
+	    my $wid = shift;
+	    my $int = $wint{$$wid};
 	    my %args = @_;
 	    _process_underline(\%args);
 	    $int->call("$$mnub.m",'add','command',%args);
 	},
+	checkbutton => sub {
+	    my $wid = shift;
+	    my $int = $wint{$$wid};
+	    $int->call("$$mnub.m",'add','checkbutton',@_);
+	},
+	radiobutton => sub {
+	    my $wid = shift;
+	    my $int = $wint{$$wid};
+	    $int->call("$$mnub.m",'add','radiobutton',@_);
+	},
 	separator=>sub {
+	    my $wid = shift;
+	    my $int = $wint{$$wid};
 	    $int->call("$$mnub.m",'add','separator',@_);
 	},
 	menu=>sub {
+	    my $wid = shift;
+	    my $int = $wint{$$wid};
 	    return $int->widget("$$mnub.m");
 	},
 	cget => sub {
+	    my $wid = shift;
+	    my $int = $wint{$$wid};
 	    if ($_[0] eq "-menu") {
 		return $int->widget("$$mnub");
 	    } else {
-		print STDERR "CALL $$mnu cget @_\n" if DEBUG();
+		print STDERR "CALL $$mnu cget @_\n" if DEBUG() > 1;
 		die "Finish cget implementation for Menubutton";
 	    }
-	}
-    };
+	});
+    bless $mnub, "Tcl::Tk::Widget::$wtype";
     return $mnub;
 }
 sub Menu {
@@ -1286,51 +1327,65 @@ sub Menu {
     my $mis         = delete $args{'-menuitems'};
     $args{'-state'} = delete $args{state} if exists $args{state};
 
-    print STDERR "MENU (@_), creating $w\n" if DEBUG();
+    print STDERR "MENU (@_), creating $w\n" if DEBUG() > 1;
 
     my $mnu = $int->menu($w, %args);
     _process_menuitems($int,$mnu,$mis);
     $int->update if DEBUG();
 
-    # TODO implement better:
-    $special_widget_abilities{$$mnu} = {
+    my $wtype = 'Menu';
+    create_widget_package($wtype);
+    create_method_in_widget_package($wtype,
 	command => sub {
+	    my $wid = shift;
+	    my $int = $wint{$$wid};
 	    my %args = @_;
 	    _process_underline(\%args);
 	    $int->call("$$mnu",'add','command',%args);
 	},
 	checkbutton => sub {
+	    my $wid = shift;
+	    my $int = $wint{$$wid};
 	    $int->call("$$mnu",'add','checkbutton',@_);
 	},
+	radiobutton => sub {
+	    my $wid = shift;
+	    my $int = $wint{$$wid};
+	    $int->call("$$mnu",'add','radiobutton',@_);
+	},
 	cascade => sub {
+	    my $wid = shift;
 	    _addcascade($mnu, @_);
 	},
 	separator => sub {
+	    my $wid = shift;
+	    my $int = $wint{$$wid};
 	    $int->call("$$mnu",'add','separator',@_);
 	},
 	menu => sub {
+	    my $wid = shift;
+	    my $int = $wint{$$wid};
 	    return $int->widget("$$mnu");
 	},
 	cget => sub {
+	    my $wid = shift;
+	    my $int = $wint{$$wid};
 	    if ($_[0] eq "-menu") {
 		return $int->widget("$$mnu");
 	    } else {
 		print STDERR "CALL $$mnu cget @_\n" if DEBUG();
 		die "Finish cget implementation for Menu";
 	    }
-	}
-    };
-    my $wname = $self->path;
-    if ($wname eq '.'
-	|| ($int->call('winfo', 'toplevel', $wname) eq $wname
-	    && $int->call('winfo', 'class', $wname) ne "Menu")) {
-	# This is the toplevel ... so make this the toplevel's menu
-	print STDERR "CONFIGURE $$self -menu $$mnu\n" if DEBUG();
-	$self->configure(-menu => $mnu);
-    } else {
-	print STDERR "DO NOT CONFIGURE $$self -menu $$mnu\n" if DEBUG();
-    }
-    return $mnu;
+	},
+	entryconfigure => sub {
+	    my $wid = shift;
+	    my $int = $wint{$$wid};
+	    my $label = shift;
+	    $label =~ s/~//;
+	    $int->call("$$mnu", 'entryconfigure', $label, @_);
+	},
+    );
+    return bless $mnu, "Tcl::Tk::Widget::$wtype";
 }
 sub Balloon {
     my $self = shift; # this will be a parent widget for newer balloon
@@ -1338,9 +1393,13 @@ sub Balloon {
     my $w    = w_uniq($self, "bln"); # return unique widget id
     $int->need_tk('Balloon');
     my $bw = $int->declare_widget($int->call('tixBalloon', $w, @_));
-    $special_widget_abilities{$w} = {
+    my $wtype = 'Balloon';
+    create_widget_package($wtype);
+    create_method_in_widget_package($wtype,
 	attach=>sub {
+	    my $bw = shift;
 	    my $w = shift;
+	    my $int = $wint{$$bw};
 	    my %args=@_;
 	    delete $args{$_} for qw(-postcommand -motioncommand -balloonposition); # TODO!
 	    for (qw(-initwait)) {
@@ -1351,26 +1410,114 @@ sub Balloon {
 	    $int->call($bw,'bind',$w,%args);
 	},
 	detach=>sub {
+	    my $bw = shift;
 	    my $w = shift;
+	    my $int = $wint{$$bw};
 	    $int->call($bw,'unbind',$w,@_);
 	},
-    };
+    );
+    bless $bw, "Tcl::Tk::Widget::$wtype";
     return $bw;
 }
 sub NoteBook {
     my $self = shift; # this will be a parent widget for newer notebook
     my $int = $wint{$$self};
     my $w    = w_uniq($self, "nb"); # return unique widget id
-    $int->need_tk('NoteBook');
-    my $bw = $int->declare_widget($int->call('tixNoteBook', $w, @_));
-    $special_widget_abilities{$w} = {
+    $int->need_tk('tixNoteBook');
+    my %args = @_;
+    delete $args{'-tabpady'};
+    delete $args{'-inactivebackground'};
+    my $bw = $int->declare_widget($int->call('tixNoteBook', $w, %args));
+    my $wtype = 'NoteBook';
+    create_widget_package($wtype);
+    create_method_in_widget_package($wtype,
 	add=>sub {
+	    my $bw = shift;
+	    my $int = $wint{$$bw};
 	    my $wp = $int->call($bw,'add',@_);
 	    my $ww = $int->declare_widget($wp);
 	    return $ww;
 	},
-    };
+    );
+    bless $bw, "Tcl::Tk::Widget::$wtype";
     return $bw;
+}
+sub DialogBox {
+    # pTk DialogBox compat sub
+    # XXX: This is not complete, needs to handle additional options
+    my $self = shift; # this will be a parent widget for newer notebook
+    my $int  = $wint{$$self};
+    my $w    = w_uniq($self, "dlgbox"); # return unique widget id
+    my %args = @_;
+    my $dlg  = $int->declare_widget($int->call('toplevel', $w,
+					       -class => "Dialog"));
+    $dlg->withdraw();
+    $dlg->title($args{'-title'} || "Dialog Box");
+    my $topparent = $int->call('winfo', 'toplevel', $self);
+    $dlg->transient($topparent);
+    $dlg->group($topparent);
+    my $top  = $dlg->Frame();
+    my $bot  = $dlg->Frame();
+    $top->pack(-side => "top", -fill => "x", -expand => 1);
+    $bot->pack(-side => "right", -fill => "x", -expand => 0);
+    my $btn;
+    my $defbtn;
+    foreach (@{$args{'-buttons'}}) {
+	$btn = $bot->Button(-text => $_,
+			    -command => ['set', '::tk::Priv(button)', "$_"]);
+	if ($args{'-default_button'} && $_ eq $args{'-default_button'}) {
+	    $defbtn = $btn;
+	    $btn->configure(-default => "active");
+	}
+	if ($^O eq "MSWin32") {
+	    # should be done only on Tk >= 8.4
+	    $btn->configure(-width => "-11");
+	}
+	$btn->pack(-side => "left", -padx => 4, -pady => 5);
+    }
+    my $popover = $args{'-popover'} || "cursor";
+    $dlg->bind('<Destroy>', 'set ::tk::Priv(button) {}');
+    my $wtype = 'DialogBox';
+    create_widget_package($wtype);
+    create_method_in_widget_package($wtype,
+	add => sub {
+	    my $wid = shift;
+	    my $int = $wint{$$wid};
+	    my $wtype = shift;
+	    my %args  = @_;
+	    my $subw;
+	    {
+		no strict 'refs';
+		$subw = &{"Tcl::Tk::Widget::$wtype"}($top, %args);
+	    }
+	    $subw->pack(-side => "top", -fill => "x");
+	    return $subw;
+	},
+	Show => sub {
+	    my $wid = shift;
+	    my $int = $wint{$$wid};
+	    my $grab = shift;
+	    # ::tk::PlaceWindow is Tk 8.4+
+	    if ($popover eq "cursor") {
+		$int->call('::tk::PlaceWindow', $w, 'pointer', 'center');
+	    } elsif (Tcl::Tk::Exists($popover)) {
+		$int->call('::tk::PlaceWindow', $w, 'widget', $popover);
+	    } else {
+		$int->call('::tk::PlaceWindow', $w);
+	    }
+	    $int->grab($w);
+	    $int->focus($defbtn) if $defbtn;
+	    $int->call('vwait', '::tk::Priv(button)');
+	    my $val = $int->GetVar('::tk::Priv(button)');
+	    eval {
+		# Window may have been destroyed
+		$int->call('grab', 'release', $w);
+		$int->call('wm', 'withdraw', $w);
+	    };
+	    return $val;
+	}
+    );
+    return bless $dlg, "Tcl::Tk::Widget::$wtype";
 }
 sub Photo {
     my $self = shift; # this will be a parent widget for newer Photo
@@ -1378,6 +1525,8 @@ sub Photo {
     my $w    = w_uniq($self, "pht"); # return unique widget id
     $int->need_tk('Img');
     my $bw = $int->declare_widget($int->call('image','create', 'photo', @_));
+    create_widget_package('Photo');
+    bless $bw, "Tcl::Tk::Widget::Photo";
     return $bw;
 }
 
@@ -1400,25 +1549,29 @@ sub Tree {
 	$sub_args{$_} = delete $args{$_} if exists $args{$_};
     }
     # The hlist options must be passed in -options are creation time
+    # as a Tcl list.  Build a Perl array that will be auto-converted
+    # to a Tcl list in 'call'.
+    my @opts;
     foreach my $opt (keys %sub_args) {
 	my $cname = $opt;
 	$cname =~ s/^-//;
-	$args{'-options'} .= "\nhlist.$cname \"$sub_args{$opt}\""
+	push @opts, "hlist.$cname", $sub_args{$opt};
     }
+    $args{'-options'} = \@opts;
     my $tree = $int->declare_widget($int->call('tixTree', $w, %args));
-    $special_widget_abilities{$w} = {
-	headerCreate=>sub {
-	    return $int->call($tree, 'subwidget', 'hlist',
-			      'header', 'create', @_);
-	},
-    };
+    my $wtype = 'Tree';
+    create_widget_package($wtype);
+    # We don't need special_widget_abilities as long as a recent Tix
+    # is used that passes the HList method calls to its subwidget
+    # automatically.
+    bless $tree, "Tcl::Tk::Widget::Photo";
     return $tree;
 }
 
-my %scrolls; # How avoid this? Creating package would help, but this would be overkill.
+# Scrolled is implemented via BWidget ScrolledWindow using MultipleWidget
 sub Scrolled {
     print STDERR "(S)[[@_]]\n" if DEBUG();
-    my $self = shift; # this will be a parent widget for newer button
+    my $self = shift; # this will be a parent widget for newer Scrolled
     my $int = $wint{$$self};
     my $wtype = shift; # what type of scrolled widget
     die "wrong 'scrolled' type $wtype" unless $wtype =~ /^\w+$/;
@@ -1438,101 +1591,134 @@ sub Scrolled {
     }
 
     # Use BWidget ScrolledWindow as wrapper widget
-    $int->need_tk("BWidget");
+    $int->need_tk("ScrolledWindow");
     my $w  = w_uniq($self, "sc"); # return unique widget id
-    my $sw = $int->declare_widget($int->call('ScrolledWindow', $w,
-					     -auto=>'both',
-					     -scrollbar=>'both'));
+    my $sw = $int->call('ScrolledWindow', $w,
+			-auto=>'both', -scrollbar=>'both');
+    $sw = $int->declare_widget($sw);
     my $subw;
     {
 	no strict 'refs';  # another option would be hash with values as subroutines
-	$subw = &{"Tcl::Tk::Widget::$wtype"}($sw,%args);
+	$subw = &{"Tcl::Tk::Widget::$wtype"}($sw, %args);
     }
     $sw->setwidget($$subw);
-    $scrolls{$$sw}=$$subw;
-    return $sw;
+    my $mmw = new Tcl::Tk::Widget::MultipleWidget (
+	$int,
+	$subw, ['&','-'], # all methods and options redirected to $subw
+	$sw, ['*'],       # all geometry methods redirected to $sw
+    );
+    return $mmw;
 }
-=ignore
-# attempt to implement 'Scrolled' a bit another way
-sub not_Scrolled {
-  print STDERR "(S)[[@_]]\n" if DEBUG();
-  my $self = shift; # this will be a parent widget for newer button
-  my $int = $wint{$$self};
-  my $wtype = shift; # what type of scrolled widget
-  die "wrong 'scrolled' type $wtype" unless $wtype =~ /^\w+$/;
-  $int->need_tk("BWidget");
-  $gwcnt++ while exists $wint{"$$self.sc$gwcnt"};
-  # translate Scrolled parameter
-  my %args = @_;
-  my $sb = delete $args{'-scrollbars'};
-  if ($sb) {
-    # TODO (easy one) -- really process parameters to scrollbar. 
-    # Now let them be just like 'osoe'
-  }
-  my $sw = $int->declare_widget($int->call('ScrolledWindow',"$$self.sc$gwcnt",-auto=>'both', -scrollbar=>'both')); # assumes existance of BWidget package
-  my $w;
-  {
-    no strict 'refs';  # another option would be hash with values as subroutines
-    $w = &{"Tcl::Tk::Widget::$wtype"}($sw,%args);
-  }
-  $sw->setwidget($$w);
-  my $widg = new Tcl::Tk::Widget::MultipleWidget($int,$sw,[],$w,[]);
-  return $widg;
-}
-=cut
 
+# substitute Tk's "tk_optionMenu" for this
+sub Optionmenu {
+    my $self = shift; # this will be a parent widget for newer Optionmenu
+    my $int = $wint{$$self};
+
+    # translate parameters
+    my %args = @_;
+
+    my $w  = w_uniq($self, "om"); # return unique widget id
+    my $vref = \do{my $r};
+    $vref = delete $args{'-variable'} if exists $args{'-variable'};
+    my $options = delete $args{'-options'} if exists $args{'-options'};
+    $int->need_tk('tk_optionMenu');
+    my $replopt = {};
+    for (@$options) {
+	if (ref) {
+	    # anon array [lab=>val]
+	    $replopt->{$_->[0]} = $_->[1];
+	    $_ = $_->[0];
+	}
+    }
+    my $mnu = $int->call('tk_optionMenu', $w, $vref, @$options);
+    $mnu = $int->declare_widget($mnu);
+    $w = $int->declare_widget($w);
+    my $mmw;
+    $mmw = new Tcl::Tk::Widget::MultipleWidget (
+        $int,
+        $w, ['&','-','*','-variable'=>\$vref,
+	    '-textvariable'=>sub {
+		my ($w,$optnam,$optval) = @_;
+		if (exists $mmw->{_replopt}->{$$vref}) {
+		    return \$mmw->{_replopt}->{$$vref};
+		}
+		return $vref;
+	    },
+	    '-menu'=> \$mnu,
+	    '-options'=>sub {
+		print STDERR "***options: {@_}\n";
+		my ($w,$optnam,$optval) = @_;
+		for (@$optval) {
+		    $w->add('command',$_);
+		}
+	    },
+         ],
+	 $mnu, ['&entrycget',],
+    );
+    $mmw->{_replopt} = $replopt if defined $replopt;
+    #for (keys %args) {$mmw->configure($_=>$args{$_})}
+    return $mmw;
+}
+
+# here we create Widget package, used for both standard cases like
+# 'Button', 'Label', and so on, and for all other widgets like Baloon
+# TODO : document better and provide as public way of doing things?
+my %created_w_packages; # (may be look in global stash %:: ?)
+sub create_widget_package {
+    my $widgetname = shift;
+    print STDERR "AUTOCREATE widget $widgetname (@_)\n" if DEBUG() > 1;
+    unless (exists $created_w_packages{$widgetname}) {
+	print STDERR "c-PACKAGE $widgetname (@_)\n" if DEBUG();
+	$created_w_packages{$widgetname} = {};
+	die "not allowed widg name $widgetname" unless $widgetname=~/^\w+$/;
+	# here we create Widget package
+	my $package = $::VTEMP;
+	$package =~ s/\[\[widget-repl\]\]/$widgetname/g;
+	eval "$package";
+	die $@ if $@;
+    }
+}
+# this subroutine creates a method in widget's package
+sub create_method_in_widget_package {
+    my $widgetname = shift;
+    while ($#_>0) {
+        my $widgetmethod = shift;
+        my $sub = shift;
+	next if exists $created_w_packages{$widgetname}->{$widgetmethod};
+	$created_w_packages{$widgetname}->{$widgetmethod}++; #(look in global stash?)
+        no strict 'refs';
+        my $package = "Tcl::Tk::Widget::$widgetname";
+        *{"${package}::$widgetmethod"} = $sub;
+    }
+}
 
 sub DESTROY {}			# do not let AUTOLOAD catch this method
 
 #
-# Let Tcl/Tk/Tix process required method via AUTOLOAD mechanism
+# Let Tcl/Tk process required method via AUTOLOAD mechanism
 #
-my %ptk2tcltk_mapper =
-    (
-     "optionAdd" => [ qw(option add) ],
-     "fontCreate" => [ qw(font create) ],
-     );
-#     "fontNames" => [ qw(font names) ],
 
-my %created_w_packages;
 sub AUTOLOAD {
-    print STDERR "((${$_[0]}|$::Tcl::Tk::Widget::AUTOLOAD|@_))\n" if DEBUG();
+    print STDERR "((${$_[0]}|$::Tcl::Tk::Widget::AUTOLOAD|@_))\n" if DEBUG() > 2;
     my $w = shift;
     my $wp = $$w;
     my $method = $::Tcl::Tk::Widget::AUTOLOAD;
     $method =~ s/^(Tcl::Tk::Widget::((MainWindow|$ptk_w_names)::)?)//o or die "weird inheritance ($method)";
     my $package = $1;
+    # Precedence ordering is important
+
+    # 1. Check to see if it is a known widget method
     if (exists $ptk2tcltk{$method}) {
-        print STDERR "creating $method (@_)\n" if DEBUG();
-	unless (exists $created_w_packages{$method}) {
-	    print STDERR "c-PACKAGE $method (@_)\n" if DEBUG();
-	    $created_w_packages{$method}++;
-	    die "not allowed widg name $method" unless $method=~/^\w+$/;
-	    # here we create Widget package
-	    my $package = $::VTEMP;
-	    $package =~ s/\[\[widget-repl\]\]/$method/g;
-	    eval "$package";
-	    die $@ if $@;
-	}
+	create_widget_package($method);
 	my $sub = create_ptk_widget_sub($method);
 	no strict 'refs';
 	*{"$package$method"} = $sub;
 	return $sub->($w,@_);
     }
-    if (exists $ptk2tcltk_wm{$method}) {
-        print STDERR "creating $method (@_)\n" if DEBUG();
-	my $sub = sub {
-	    my $self = shift;
-	    my $wp = $$self;
-	    $wp = '.' if $wp eq ''; # TODO -- optimize this away!
-	    $wint{$$self}->call('wm',$method,$wp,@_);
-	};
-	no strict 'refs';
-	*{"$package$method"} = $sub;
-	return $sub->($w,@_);
-    }
+    # 2. Check to see if it is a known mappable sub (widget unused)
     if (exists $ptk2tcltk_mapper{$method}) {
-        print STDERR "creating $method (@_)\n" if DEBUG();
+        print STDERR "AUTOCREATE mapped $method (@_)\n" if DEBUG() > 1;
 	my $sub = sub {
 	    my $self = shift;
 	    $wint{$$self}->call(@{$ptk2tcltk_mapper{$method}},@_);
@@ -1541,12 +1727,31 @@ sub AUTOLOAD {
 	*{"$package$method"} = $sub;
 	return $sub->($w,@_);
     }
+    # 3. Check to see if it is a known special widget ability (subcommand)
+    # (now this is commented out and probably will go away, as long as a 
+    # widget should just create method in its package. But probably such 
+    # method could be used for something else)
     $wp = '.' if $package eq 'Tcl::Tk::Widget::MainWindow::';
-    if (exists $special_widget_abilities{$wp} 
-       && exists $special_widget_abilities{$wp}->{$method}) {
+    #if (exists $special_widget_abilities{$wp} 
+    #    && exists $special_widget_abilities{$wp}->{$method}) {
+    #    no strict 'refs';
+    #    return $special_widget_abilities{$wp}->{$method}->(@_);
+    #}
+    # 4. Check to see if it is a known 'wm' command
+    # XXX: What about toplevel vs. inner widget checking?
+    if (exists $ptk2tcltk_wm{$method}) {
+        print STDERR "AUTOCREATE $ptk2tcltk_wm{$method} $method (@_)\n" if DEBUG() > 1;
+	my $sub = sub {
+	    my $self = shift;
+	    my $wp = $$self;
+	    $wp = '.' if $wp eq ''; # TODO -- optimize this away!
+	    $wint{$$self}->call($ptk2tcltk_wm{$method}, $method, $wp, @_);
+	};
 	no strict 'refs';
-        return $special_widget_abilities{$wp}->{$method}->(@_);
+	*{"$package$method"} = $sub;
+	return $sub->($w,@_);
     }
+    # 5. Check to see if it is a camelCase method.  If so, split it apart.
     # code below will always create subroutine that calls a method.
     # This could be changed to create only known methods and generate error
     # if method is, for example, misspelled.
@@ -1555,42 +1760,42 @@ sub AUTOLOAD {
     my $sub;
     if ($method =~ /^([a-z]+)([A-Z][a-z]+)$/) {
         my ($meth, $submeth) = ($1, lc($2));
-	if ($meth eq "grid") {
+	if ($meth eq "grid" || $meth eq "pack") {
+	    # grid/pack commands reorder $wp in the call
+	    print STDERR "AUTOCREATE $meth $submeth $wp (@_)\n" if DEBUG() > 1;
 	    $sub = sub {
 		my $w = shift;
 		my $wp = $w->path;
-		# TODO get rid of such "Scrollable" solution, reimplement
-		if (exists $scrolls{$wp}) {$wp=$scrolls{$wp};}
 		$wint{$wp}->call($meth, $submeth, $wp, @_);
 	    };
 	} elsif ($meth eq "after") {
+	    # after commands don't include $wp in the call
+	    print STDERR "AUTOCREATE $meth $submeth $wp (@_)\n" if DEBUG() > 1;
 	    $sub = sub {
 		my $w = shift;
 		my $wp = $w->path;
-		# TODO get rid of such "Scrollable" solution, reimplement
-		if (exists $scrolls{$wp}) {$wp=$scrolls{$wp};}
 		$wint{$wp}->call($meth, $submeth, @_);
 	    };
 	} else {
+	    # Default case, break into $wp $method $submethod and call
+	    print STDERR "AUTOCREATE $wp $meth $submeth (@_)\n" if DEBUG() > 1;
 	    $sub = sub {
 		my $w = shift;
 		my $wp = $w->path;
-		# TODO get rid of such "Scrollable" solution, reimplement
-		if (exists $scrolls{$wp}) {$wp=$scrolls{$wp};}
 		$wint{$wp}->call($wp, $meth, $submeth, @_);
 	    };
 	}
     }
     else {
+	# Default case, call as submethod of $wp
+	print STDERR "AUTOCREATE $wp $method (@_)\n" if DEBUG() > 1;
 	$sub = sub {
 	    my $w = shift;
 	    my $wp = $w->path;
-	    # TODO get rid of such "Scrollable" solution, reimplement
-	    if (exists $scrolls{$wp}) {$wp=$scrolls{$wp};}
 	    $wint{$wp}->call($wp, $method, @_);
 	};
     }
-    print STDERR "creating ($package)$method (@_)\n" if DEBUG();
+    #print STDERR "creating ($package)$method (@_)\n" if DEBUG() > 1;
     no strict 'refs';
     *{"$package$method"} = $sub;
     return $sub->($w,@_);
@@ -1608,31 +1813,41 @@ use vars qw/@ISA/;
 sub DESTROY {}			# do not let AUTOLOAD catch this method
 
 sub AUTOLOAD {
-    print STDERR "<<@_>>\n" if $Tcl::Tk::DEBUG;
+    print STDERR "<<@_>>\n" if $Tcl::Tk::DEBUG > 2;
     $::Tcl::Tk::Widget::AUTOLOAD = $::Tcl::Tk::Widget::[[widget-repl]]::AUTOLOAD;
     return &Tcl::Tk::Widget::AUTOLOAD;
 }
 1;
-print STDERR "<<starting [[widget-repl]]>>\n" if $Tcl::Tk::DEBUG;
+print STDERR "<<starting [[widget-repl]]>>\n" if $Tcl::Tk::DEBUG > 2;
 EOWIDG
 }
-
-package Tcl::Tk::Widget::Scrolled;
-#TODO
 
 package Tcl::Tk::Widget::MultipleWidget;
 # multiple widget is an object that for each option has a path
 # to refer in Tcl/Tk and for method has corresponding method in Tcl/Tk
 
+my %geometries;
+BEGIN {%geometries = map {$_=>1} qw(grid pack form place);}
+
 #syntax
 # my $ww = new Tcl::Tk::Widget::MultipleWidget(
 #   $int,
 #   $w1, [qw(-opt1 -opt2 ...), '-optn=-opttcltk', -optm=>sub{...}],
-#   $w2, [qw(-opt1 -opt2 ...)],
+#   $w2, [qw(-opt1 -opt2 ...), -optk=>\$scalar],
 #   ...
 # );
 # methods are specified like options with starting '&' with optional
 # list of replacement options after slash.
+#
+# specifying '&' without method name will result in declaring said widget
+# to be used for all methods that are not listed
+# 
+# specifying '-' without method name will result in declaring said widget
+# to be used for all options that are not listed
+# 
+# specifying '*' alone will result in declaring said widget
+# to be used for all geometry methods
+# 
 # Example:
 # my $ww = new Tcl::Tk::Widget::MultipleWidget($int,
 #   $w1, ['-opt1', '-opt2', '-opt3=opttcltk', -opt4=>sub{print 'opt4'}],
@@ -1656,23 +1871,33 @@ sub new {
 	_subst => {},  # hash to hold replacement of option names for pTk=>Tcl/Tk
 		       # keys are perlTk option/method, values are array refs 
 		       # describing behaviour
-	               # "opt2"=>[$w1,'opt2',{},$w2,'tkopt2',{}],
-		       # "&meth"=>[$w2,'tkmethod',{opt7=>tkopt7,opt8=>opt8,opt9=>tkopt9}]
+	               # "-opt2"=>[$w1,'-opt2',{},$w2,'-tkopt2',{}],
+		       # "&meth"=>[$w2,'tkmethod',{-opt7=>'-tkopt7',-opt8=>'-opt8',-opt9=>'-tkopt9'}]
 	_def_opt => undef,  # widget to accept unrecognized options
 	_def_meth => undef, # widget to accept unrecognized methods
+	_def_geom => undef, # widget to accept geometry requests
+	_w => {},      # hash of all subwidgets
     };
     my @args = @_;
     for (my $i=0; $i<$#args; $i+=2) {
         my $w = $args[$i];
         $w = $int->declare_widget($w) unless ref $w;
+	$self->{_w}->{$w}++;
         my @a = @{$args[$i+1]};
         for (my $j=0; $j<=$#a; $j++) {
             my ($p, $prepl) = ($a[$j]);
 	    if ($p eq '-') {
 		$self->{_def_opt} = $w;
+		next;
 	    }
 	    elsif ($p eq '&') {
 		$self->{_def_meth} = $w;
+		next;
+	    }
+	    elsif ($p eq '*') {
+		$self->{_def_geom} = $w;
+		$self->{_path} = $w->path;
+		next;
 	    }
 	    my $meth = ($p=~s/^&// ? "&":"");
 	    my $hsubst = {};
@@ -1683,7 +1908,7 @@ sub new {
                 ($p, $prepl) = ($1,$2);
             }
             else {$prepl = $p}
-            if ($j+1<=$#a && ref ($a[$j+1]) eq 'CODE') {
+            if ($j+1<=$#a) {
                 $prepl = $a[$j+1];
                 splice @a, $j+1, 1;
             }
@@ -1691,10 +1916,12 @@ sub new {
 	    push @{$self->{_subst}->{"$meth$p"}}, $w, $prepl, $hsubst;
         }
     }
-    $self->{_path} = $args[0]->path;
+    $self->{_path} ||= ($self->{_def_geom} || $self->{_def_meth} || $args[0])->path;
     return bless $self, $package;
 }
-sub path {${$_[0]->{_path}}}
+sub path {
+  $_[0]->{_path};
+}
 
 #
 # 'configure' and 'cget' could not be processed using common AUTOLOAD
@@ -1711,8 +1938,18 @@ sub configure {
 		for my $i (0 .. ($#$mdo-2)/3) {
 		    my ($replwid, $replnam, $replopt) = 
 		       ($mdo->[3*$i],$mdo->[3*$i+1],$mdo->[3*$i+2]);
-		    @res = $replwid->configure($replnam,$args{$optname});
-		    #$w->{_int}->MainLoop;
+		    if (ref($replnam)) {
+			if (ref($replnam) eq 'CODE') {
+			    @res = $replnam->($replwid,$optname,$args{$optname});
+			}
+			else {
+			    # suppose it's scalar ref to operate with
+			    $$replnam = $args{$optname};
+			}
+		    }
+		    else {
+		    	@res = $replwid->configure($replnam,$args{$optname});
+		    }
 		}
 	    }
 	    elsif (exists $w->{_def_opt}) {
@@ -1727,33 +1964,65 @@ sub configure {
     }
     elsif ($#_==0) {
 	# 1 argument, in array context return a list of five or two elements
-	die "NYI configure 1";
+	die "NYI MultipleWidget configure 1";
     }
     else {
 	# here $#_==-1, no arguments given
 	# Returns a list of lists for all the options supported by widget
-	die "NYI configure 2";
+	die "NYI MultipleWidget configure 2";
     }
-    die "NYI configure 3";
+    die "NYI MultipleWidget configure 3";
 }
 sub cget {
-    die "NYI cget";
+    my $w = shift;
+    my $optname = shift;
+    if (exists $w->{_subst}->{$optname}) {
+	my $mdo = $w->{_subst}->{$optname};
+	for my $i (0 .. ($#$mdo-2)/3) {
+	    my ($replwid, $replnam, $replopt) = 
+	       ($mdo->[3*$i],$mdo->[3*$i+1],$mdo->[3*$i+2]);
+	    if (ref($replnam)) {
+		if (ref($replnam) eq 'CODE') {
+		    return $replnam->($replwid,$optname);
+		}
+		else {
+		    # suppose it's scalar ref to operate with
+		    return $$replnam;
+		}
+	    }
+	    if (ref($replnam) && ref($replnam) eq 'CODE') {
+	    }
+	    else {
+		return $replwid->cget($replnam);
+	    }
+	}
+    }
+    elsif (exists $w->{_def_opt}) {
+	# default options receiver
+	return $w->{_def_opt}->cget($optname);
+    }
+    else {
+	die "this MultipleWidget is not able to process CGET $optname";
+    }
 }
+
+sub DESTROY {}			# do not let AUTOLOAD catch this method
 
 #
 # Unlike for Tcl::Tk::Widget::Button and similar, does not autovivify
 # required method; instead it uses autoloading every time, because
 # otherwise methods from different MultipleWidgets will mix
 sub AUTOLOAD {
-    #print STDERR "##@_($::Tcl::Tk::Widget::MultipleWidget::AUTOLOAD)##\n";
+    # print STDERR "##@_($::Tcl::Tk::Widget::MultipleWidget::AUTOLOAD)##\n";
     # first look into substitute hash
     # if not found - call that method from "default" widget ...->{_def_meth}
     my $wmeth = $::Tcl::Tk::Widget::MultipleWidget::AUTOLOAD;
     $wmeth=~s/::MultipleWidget\b//;
     my ($pmeth) = ($wmeth=~/::([^:]+)$/);
-    if (exists $_[0]->{_subst}->{"&$pmeth"}) {
-	my $mdo = $_[0]->{_subst}->{"&$pmeth"};
-	my @args = @_[1..$#$_];
+    my $self = $_[0];
+    if (exists $self->{_subst}->{"&$pmeth"}) {
+	my $mdo = $self->{_subst}->{"&$pmeth"};
+	my @args = @_[1..$#_];
 	my %args = @args;
 	for my $i (0 .. ($#$mdo-2)/3) {
 	    my ($replwid, $replnam, $replopt) = ($mdo->[3*$i],$mdo->[3*$i+1],$mdo->[3*$i+2]);
@@ -1764,14 +2033,34 @@ sub AUTOLOAD {
 		}
 	    }
 	    # TODO - when same method should be invoked on several widgets
-	    no strict 'refs';
-	    return eval "\$replwid->$replnam(%opts)";
-	    #return &{$replnam}($replwid,%opts);
+	    my @res = $replwid->$replnam(%opts);
+	    ## this is not very strict place, but there's no 100% solution.
+	    ## if a function returns our sub-widget, then we must return our self.
+	    my $_w = $self->{_w};
+	    @res = map {exists $_w->{$_} ? $self : $_} @res;
+	    return @res if wantarray;
+	    return $res[0];
 	}
     }
-    elsif (exists $_[0]->{_def_meth}) {
-	no strict 'refs';
-	return &{$wmeth}($_[0]->{_def_meth},@_[1..$#_]);
+    elsif (exists $geometries{$pmeth} && exists $self->{_def_geom}) {
+	my @res = $self->{_def_geom}->$pmeth(@_[1..$#_]);
+	## this is not very strict place, but there's no 100% solution.
+	## if a function returns our sub-widget, then we must return our self.
+	my $_w = $self->{_w};
+	@res = map {exists $_w->{$_} ? $self : $_} @res;
+	return @res if wantarray;
+	return $res[0];
+    }
+    elsif (exists $self->{_def_meth}) {
+	my $replwid = $self->{_def_meth};
+	# print STDERR "_def_meth: $replwid $pmeth (@_[1..$#_])\n";
+	my @res = $replwid->$pmeth(@_[1..$#_]);
+	## this is not very strict place, but there's no 100% solution.
+	## if a function returns our sub-widget, then we must return our self.
+	my $_w = $self->{_w};
+	@res = map {exists $_w->{$_} ? $self : $_} @res;
+	return @res if wantarray;
+	return $res[0];
     }
     die "this MultipleWidget is not able to process $wmeth";
     # currently not reached
@@ -1804,7 +2093,7 @@ sub new {
     return $self->Toplevel(@_);
 }
 
-bootstrap Tcl::Tk;
+Tcl::Tk->bootstrap($Tcl::Tk::VERSION);
 
 1;
 

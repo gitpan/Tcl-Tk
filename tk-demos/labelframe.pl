@@ -3,7 +3,7 @@
 # This demonstration script creates a toplevel window containing
 # several labelframe widgets.
 #
-# RCS: @(#) $Id: labelframe.tcl,v 1.2 2001/10/30 11:21:50 dkf Exp $
+# RCS: @(#) $Id: labelframe.pl,v 1.2 2004/03/22 23:59:57 hobbs2 Exp $
 
 our $widgetDemo;
 unless ($widgetDemo) {

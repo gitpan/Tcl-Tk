@@ -1,3 +1,14 @@
+/* 
+ * Tk.xs --
+ *
+ *	This file contains XS code for the Perl's Tcl/Tk bridge module.
+ *
+ * Copyright (c) 1994-1997, Malcolm Beattie
+ * Copyright (c) 2004 ActiveState Corp., a division of Sophos PLC
+ *
+ * RCS: @(#) $Id: Tk.xs,v 1.2 2004/04/09 19:25:18 hobbs2 Exp $
+ */
+
 #include "EXTERN.h"
 #include "perl.h"
 #include "XSUB.h"
@@ -19,16 +30,12 @@ CreateMainWindow(interp, display, name, sync = 0)
 	char *		display
 	char *		name
 	int		sync
-	Tk_Window	mainWindow = NO_INIT
     CODE:
-#if TK_MAJOR_VERSION < 4 || TK_MAJOR_VERSION == 4 && TK_MINOR_VERSION < 1
-	mainWindow = Tk_CreateMainWindow(interp, display, name, "Tk");
-	if (!mainWindow)
-	    croak(interp->result);
-	Tk_GeometryRequest(mainWindow, 200, 200);
-	if (sync)
-	    XSynchronize(Tk_Display(mainWindow), True);
-#endif
+	/*
+	 * This function was needed for Tk pre-8 and sticks around
+	 * for compatability reasons.
+	 */
+
 
 void
 Tk_Init(interp)
