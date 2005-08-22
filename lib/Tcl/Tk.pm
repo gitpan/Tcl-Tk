@@ -6,7 +6,7 @@ use Exporter;
 use vars qw(@ISA @EXPORT_OK %EXPORT_TAGS);
 @ISA = qw(Exporter Tcl);
 
-$Tcl::Tk::VERSION = '0.87';
+$Tcl::Tk::VERSION = '0.88';
 
 # For users that want to ensure full debugging from initial use call,
 # including the checks for other Tk modules loading following Tcl::Tk
@@ -753,7 +753,10 @@ sub widget($@) {
     my $int = (ref $_[0]?shift:$tkinterp);
     my $wpath = shift;
     my $wtype = shift || 'Tcl::Tk::Widget';
-    $wtype = "Tcl::Tk::Widget::$wtype" unless $wtype=~/^(?:Tcl::Tk::Widget)/;
+    unless ($wtype=~/^(?:Tcl::Tk::Widget)/) {
+	Tcl::Tk::Widget::create_widget_package($wtype);
+	$wtype = "Tcl::Tk::Widget::$wtype";
+    }
     #if (exists $W{RPATH}->{$wpath}) {
     #    return $W{RPATH}->{$wpath};
     #}
@@ -1153,7 +1156,8 @@ create_method_in_widget_package ('Canvas',
     },
     CanvasBind => sub {
 	my $self = shift;
-	$self->bind('item',@_);
+	my $item = shift;
+	$self->bind($item,@_);
     },
     CanvasFocus => sub {
 	my $self = shift;

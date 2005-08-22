@@ -2191,9 +2191,9 @@ sub simplePromptBox {
 
   $top = $self->{main_window}->Toplevel(-title => $title, -overanchor => 'cursor' ) ;
 
- $Devel::tcltkdb::promptString = $defaultText ;
+  $Devel::tcltkdb::promptString = $defaultText ;
 
-  $entry = $top->Entry('-textvariable' => \$Devel::ptkdb::promptString)->pack(-side => 'top', -fill => 'both', -expand => 1) ;
+  $entry = $top->Entry('-textvariable' => \$Devel::tcltkdb::promptString)->pack(-side => 'top', -fill => 'both', -expand => 1) ;
   
   
   $okayBtn = $top->Button( -text => "Okay", @Devel::tcltkdb::button_font, -command => sub {  &$okaySub() ; $top->destroy ;}

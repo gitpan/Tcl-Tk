@@ -17,6 +17,7 @@ t/ptk-compat.t	file to check for perlTk compatibility
 t/Tk.xbm
 t/Xcamel.gif
 t/text.t
+t/unicode.t		some unicode tests
 t/zzPhoto.t
 demos/wcolors.pl	demo script with syntax very similar to perlTk
 demos/activex.pl	demo script for Windows that uses ActiveX

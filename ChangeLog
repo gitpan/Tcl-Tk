@@ -1,6 +1,27 @@
+2005-08-23  Vadim Konovalov
+
+	* MANIFEST: mention t/unicode.t
+	* Changes: brief summary for 0.88
+	* CPAN release 0.88
+
+2005-08-16  Jeff Hobbs  <jeffh@ActiveState.com>
+
+	* t/unicode.t (new): extended unicode/null passing tests
+
+2005-03-07  Vadim Konovalov <vadimk@vkonovalov.ru>
+
+	* demos/tcltkdb.pm: fix Save/Restore config behaviour
+
+2005-02-21  Vadim Konovalov <vadimk@vkonovalov.ru>
+
+	* lib/Tcl/Tk.pm: bump to 0.88
+	fix CanvasBind bug; fix Tcl::Tk::widget(...) to process better
+	* Changes: add new 0.88 records
+
 2005-02-02  Vadim Konovalov <vadimk@vkonovalov.ru>
 
 	* lib/Tcl/Tk.pm: disable temporarily cleanup on widget destruction
+	fix bug in Tcl::Tk::Widget::MainWindow::cget&configure
 	* Changes: prepare for CPAN release
 
 2005-01-30  Vadim Konovalov <vadimk@vkonovalov.ru>

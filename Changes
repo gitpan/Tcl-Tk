@@ -1,5 +1,9 @@
 Revision history for Perl extension Tcl::Tk.
 
+0.88    23-aug-2005
+	- bug fixes
+	- some tests
+
 0.87    02-feb-2005
 	- updates in documentation
 	- implement better cleanup on destruction of widgets, but not enable
