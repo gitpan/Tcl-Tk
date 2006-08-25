@@ -6,7 +6,7 @@ use Exporter;
 use vars qw(@ISA @EXPORT_OK %EXPORT_TAGS);
 @ISA = qw(Exporter Tcl);
 
-$Tcl::Tk::VERSION = '0.88';
+$Tcl::Tk::VERSION = '0.90';
 
 # For users that want to ensure full debugging from initial use call,
 # including the checks for other Tk modules loading following Tcl::Tk
@@ -784,81 +784,6 @@ sub widgets {
     \%W;
 }
 
-#sub after { 
-#    my $int = (ref $_[0]?shift:$tkinterp);
-#    $int->call("after", @_) }
-#sub bell { 
-#    my $int = (ref $_[0]?shift:$tkinterp);
-#    $int->call("bell", @_) }
-#sub bindtags {
-#    my $int = (ref $_[0]?shift:$tkinterp);
-#    $int->call("bindtags", @_) }
-#sub clipboard { 
-#    my $int = (ref $_[0]?shift:$tkinterp);
-#    $int->call("clipboard", @_) }
-#sub destroy { 
-#    my $int = (ref $_[0]?shift:$tkinterp);
-#    $int->call("destroy", @_) }
-#sub exit { 
-#    my $int = (ref $_[0]?shift:$tkinterp);
-#    $int->call("exit", @_) }
-#sub fileevent {
-#    my $int = (ref $_[0]?shift:$tkinterp);
-#    $int->call("fileevent", @_) }
-#sub focus {
-#    my $int = (ref $_[0]?shift:$tkinterp);
-#    $int->call("focus", @_) }
-#sub grab {
-#    my $int = (ref $_[0]?shift:$tkinterp);
-#    $int->call("grab", @_) }
-#sub lower {
-#    my $int = (ref $_[0]?shift:$tkinterp);
-#    $int->call("lower", @_) }
-#sub option {
-#    my $int = (ref $_[0]?shift:$tkinterp);
-#    $int->call("option", @_) }
-#sub place {
-#    my $int = (ref $_[0]?shift:$tkinterp);
-#    $int->call("place", @_) }
-#sub raise {
-#    my $int = (ref $_[0]?shift:$tkinterp);
-#    $int->call("raise", @_) }
-#sub selection {
-#    my $int = (ref $_[0]?shift:$tkinterp);
-#    $int->call("selection", @_) }
-#sub tk {
-#    my $int = (ref $_[0]?shift:$tkinterp);
-#    $int->call("tk", @_) }
-#sub tkwait {
-#    my $int = (ref $_[0]?shift:$tkinterp);
-#    $int->call("tkwait", @_) }
-#sub update {
-#    my $int = (ref $_[0]?shift:$tkinterp);
-#    $int->call("update", @_) }
-#sub winfo {
-#    my $int = (ref $_[0]?shift:$tkinterp);
-#    $int->call("winfo", @_) }
-#sub wm {
-#    my $int = (ref $_[0]?shift:$tkinterp);
-#    $int->call("wm", @_) }
-#sub property {
-#    my $int = (ref $_[0]?shift:$tkinterp);
-#    $int->call("property", @_);
-#}
-#
-#sub grid {
-#    my $int = (ref $_[0]?shift:$tkinterp);
-#    $int->call("grid", @_);
-#}
-#sub bind {
-#    my $int = shift;
-#    $int->call("bind", @_);
-#}
-#sub pack {
-#    my $int = shift;
-#    $int->call("pack", @_);
-#}
-
 sub pkg_require {
     # Do Tcl package require with optional version, cache result.
     my $int = shift;
@@ -926,6 +851,7 @@ sub foo { 1; }
 EOS
     return $fh;
 }
+
 # subroutine findINC copied from perlTk/Tk.pm
 sub findINC {
     my $file = join('/',@_);
@@ -936,6 +862,43 @@ sub findINC {
 	return $path if (-e ($path = "$dir/$file"));
     }
     return undef;
+}
+
+# subroutine create_rotext just executes some simple code to introduce
+# 'rotext' widget to Tcl/Tk
+sub create_rotext {
+    my $int = shift;
+    $int->Eval(<<'EOS');
+# got 'rotext' code from http://mini.net/tcl/3963 and modified a bit
+# (insertion cursor unchanged, unlike was proposed by author of original code)
+if {[info proc rotext]==""} {
+
+package require snit
+
+::snit::widgetadaptor rotext {
+
+   constructor {args} {
+       installhull using text
+
+       # Apply an options passed at creation time.
+       $self configurelist $args
+   }
+
+   # Disable the insert and delete methods, to make this readonly.
+   method insert {args} {}
+   method delete {args} {}
+
+   # Enable ins and del as synonyms, so the program can insert and delete.
+   delegate method ins to hull as insert
+   delegate method del to hull as delete
+
+   # Pass all other methods and options to the real text widget, so
+   # that the remaining behavior is as expected.
+   delegate method * to hull
+   delegate option * to hull
+}
+}
+EOS
 }
 
 #
@@ -1454,6 +1417,7 @@ my %ptk2tcltk =
      Entry       => ['entry', 'ent',],
      Frame       => ['frame', 'f',],
      LabelFrame  => ['labelframe', 'lf',],
+     Labelframe  => ['labelframe', 'lf',],
      #LabFrame    => ['labelframe', 'lf',],
      Label       => ['label', 'lbl',],
      Listbox     => ['listbox', 'lb',],
@@ -1464,7 +1428,7 @@ my %ptk2tcltk =
      Bitmap	 => ['image', 'bmp',],
      Photo	 => ['image', 'pht',],
      Radiobutton => ['radiobutton', 'rb',],
-     ROText	 => ['text', 'rotext',],
+     ROText	 => ['text', 'rotext','snit'],
      Text        => ['text', 'text',],
      Scrollbar   => ['scrollbar','sb',],
      Scale       => ['scale','scl',],
@@ -1654,6 +1618,8 @@ sub LabFrame {
     );
     return $lf;
 }
+
+=obsolete-implementation
 sub ROText {
     # Read-only text
     # This just needs to intercept the programmatic insert/delete
@@ -1667,7 +1633,7 @@ sub ROText {
     create_method_in_widget_package($wtype,
 	insert => sub {
 	    my $wid = shift;
-	    my $int = $self->interp;
+	    my $int = $wid->interp;
 	    $wid->configure(-state => "normal");
 	    # avoid recursive call by going directly to interp
 	    $int->call($wid, 'insert', @_);
@@ -1675,7 +1641,7 @@ sub ROText {
 	},
 	delete => sub {
 	    my $wid = shift;
-	    my $int = $self->interp;
+	    my $int = $wid->interp;
 	    $wid->configure(-state => "normal");
 	    # avoid recursive call by going directly to interp
 	    $int->call($wid, 'delete', @_);
@@ -1683,6 +1649,32 @@ sub ROText {
 	}
     );
     $text->configure(-state => "disabled");
+    return $text;
+}
+=cut
+
+# reimplementation
+sub ROText {
+    # Read-only text
+    # This just needs to intercept the programmatic insert/delete
+    # and reenable the text widget for that duration.
+    my $self = shift; # this will be a parent widget for newer ROText
+    my $int  = $self->interp;
+    $int->create_rotext;
+    my $w    = w_uniq($self, "rotext"); # create uniq pref's widget id
+    my $wtype = 'ROText';
+    create_widget_package($wtype);
+    my $text = $int->declare_widget($int->call('rotext', $w, @_), "Tcl::Tk::Widget::$wtype");
+    create_method_in_widget_package($wtype,
+	insert => sub {
+	    my $wid = shift;
+	    $wid->interp->call($wid, 'ins', @_);
+	},
+	delete => sub {
+	    my $wid = shift;
+	    $wid->interp->call($wid, 'del', @_);
+	}
+    );
     return $text;
 }
 
@@ -2226,7 +2218,7 @@ sub AUTOLOAD {
     # Separate method to autoload from (sub)package
     $method =~ s/^(Tcl::Tk::Widget::((MainWindow|$ptk_w_names)::)?)//
 	or die "weird inheritance ($method)";
-    my $package = $1;
+    my ($package,$wtype) = ($1,$3);
     my $super;
     $method =~ s/^SUPER::// and $super=1; # super-method of child class?
 
@@ -2326,15 +2318,25 @@ sub AUTOLOAD {
 		$w->interp->call($meth, $submeth, @_);
 	    };
 	} else {
-	    # Default case, break into $wp $method $submethod and call
+	    # Default camel-case, break into $wp $method $submethod and call
 	    _DEBUG(2, "AUTOCREATE $package$method $meth $submeth (@_)\n") if DEBUG;
-	    $sub = $fast ? sub {
-		my $w = shift;
-		$w->interp->invoke($w->path, $meth, $submeth, @_);
-	    } : sub {
-		my $w = shift;
-		$w->interp->call($w->path, $meth, $submeth, @_);
-	    };
+	    # if method was created with 'create_method_in_widget_package' it should
+	    # be called instead...
+	    if (exists $created_w_packages{$wtype}->{$meth}) {
+		$sub = sub {
+		    my $w = shift;
+		    $w->$meth($submeth,@_);
+		};
+	    } else {
+		# .. otherwise ordinary camel case invocation
+		$sub = $fast ? sub {
+		    my $w = shift;
+		    $w->interp->invoke($w->path, $meth, $submeth, @_);
+		} : sub {
+		    my $w = shift;
+		    $w->interp->call($w->path, $meth, $submeth, @_);
+		};
+	    }
 	}
     }
     else {
@@ -2342,10 +2344,10 @@ sub AUTOLOAD {
 	_DEBUG(2, "AUTOCREATE $package$method $method (@_)\n") if DEBUG;
 	$sub = $fast ? sub {
 	    my $w = shift;
-	    $w->interp->invoke($w->path, $method, @_);
+	    $w->interp->invoke($w, $method, @_);
 	} : sub {
 	    my $w = shift;
-	    $w->interp->call($w->path, $method, @_);
+	    $w->interp->call($w, $method, @_);
 	};
     }
     _DEBUG(2, "creating ($package)$method (@_)\n") if DEBUG;

@@ -1,3 +1,12 @@
+2006-08-25  Vadim Konovalov
+
+	* lib/Tcl/Tk.pm: ROText better implementation
+	* lib/Tcl/Tk.pm: stale commented hunk removed
+	* lib/Tcl/Tk.pm: better CamelCase AUTOLOAD, refer to widget method
+	  if created with create_method_in_widget_package sub
+	* MANIFEST: mention t/tk-mw.t
+	* Changes: brief summary for 0.90
+
 2005-08-23  Vadim Konovalov
 
 	* MANIFEST: mention t/unicode.t

@@ -1,5 +1,11 @@
 Revision history for Perl extension Tcl::Tk.
 
+0.90    25-aug-2006
+	- ROText better implementation
+	- better CamelCase AUTOLOAD, refer to widget method if created with
+	  create_method_in_widget_package sub
+	- one more t/ file
+
 0.88    23-aug-2005
 	- bug fixes
 	- some tests
