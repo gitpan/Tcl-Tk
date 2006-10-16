@@ -1,3 +1,27 @@
+2006-10-13  Vadim Konovalov
+
+	* lib/Tcl/Tk.pm: Tcl::Tk::AUTOLOAD, Tcl::Tk::Widget::AUTOLOAD now
+	transform __ as :: and ___ as _ (likewise Tkx)
+	* lib/Tcl/Tk.pm: better "scrolled_widget" support
+	* lib/Tcl/Tk.pm: Tcl::Tk::Declare as synonym of Tcl::Tk::Widget::Declare
+	* lib/Tcl/Tk.pm: Optionmenu widget reimplemented with snit
+	* lib/Tcl/Tk.pm: ... therefore Tcl::Tk::Widget::MultipleWidget gone!
+	* lib/Tcl/Tk.pm: Scrolled_obsolete gone
+	* lib/t/optmenu.t: widget package name is now a bit different
+
+2006-10-06  Vadim Konovalov
+
+	* lib/Tcl/Tk.pm: Version 0.91
+	* lib/Tcl/Tk.pm: Implement Scrolled widgets using snidget; obsolete
+	old implementation
+	* lib/Tcl/Tk.pm: $int->create_scrolled_widget("widgetname") method
+	(document and implement)
+	* lib/Tcl/Tk.pm: Authors section corrected
+	* lib/Tcl/Tk.pm: $int->widget('.w'); now encourage 2nd argument of
+	widget type
+	* lib/Tcl/Tk.pm: remove obsolete implementation of ROText
+	* lib/Tcl/Tk.pm: 'bind' for MultipleWidget
+
 2006-08-25  Vadim Konovalov
 
 	* lib/Tcl/Tk.pm: ROText better implementation

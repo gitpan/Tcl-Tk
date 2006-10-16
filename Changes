@@ -1,5 +1,12 @@
 Revision history for Perl extension Tcl::Tk.
 
+0.91    16-oct-2006
+	- starting from 0.90 snit is a requirement
+	- Scrolled reimplementation
+	- awkward Tcl::Tk::Widget::MultipleWidget gone away
+	- Optionmenu better implementation
+	- Declare(...) is now also interpreter method
+
 0.90    25-aug-2006
 	- ROText better implementation
 	- better CamelCase AUTOLOAD, refer to widget method if created with
