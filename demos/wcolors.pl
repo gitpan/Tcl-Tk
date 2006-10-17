@@ -1,31 +1,30 @@
 use strict;
-use Tcl::Tk qw(:perlTk);
+use Tcl::Tk;
 
 my @colors;
 
-my $mw = MainWindow->new();
+my $mw = Tcl::Tk::MainWindow->new();
+my $frtop = $mw->Frame->pack(-side=>'top', -expand=>1, -fill=>'x');
 my $t = $mw->Scrolled(qw/Text -relief sunken -borderwidth 2 -scrollbars osoe/
-#my $t = $mw->Text(qw/-relief sunken -borderwidth 2/
-)->form(-top=>['%0',25],-bottom=>'%100',-left=>'%0',-right=>'%100');
+)->pack(-expand=>1, -fill=>'both');
 my $color = 'White';
-my $e = $mw->Entry(-textvariable=>\$color)->form(-top=>'%0',-bottom=>$t,-left=>'%0');
+my $e = $frtop->Entry(-textvariable=>\$color)->pack(-side=>'left');
 sub try_color {
   print STDERR "$color\n";
   $t->configure(-bg=>$color);
 }
 $e->bind('<Return>',\&try_color);
-$mw->Button(-text=>'try color',-command=>\&try_color)
-  ->form(-top=>'%0',-bottom=>$t,-left=>$e);
+$frtop->Button(-text=>'try color',-command=>\&try_color)
+  ->pack(-side=>'left');
 for (@colors) {
   $t->windowCreate('end',-window=>$mw->Frame(-bg=>$_,-width=>'5c',-height=>'1c'));
-  $t->windowCreate('end',-window=>$mw->Button(-bg=>$_,-text=>$_,-command=>eval "sub {
-	\$t->configure(-bg=>'$_');
-	print STDERR \"$_\n\";
-      }"));
-  $t->insert('end',"$_\n");
+  $t->windowCreate('end',-window=>$mw->Button(-bg=>$_,-text=>$_,
+        -command=> "$t configure -bg $_; puts $_"
+      ));
+  $t->_insertEnd("$_\n");
 }
 
-MainLoop;
+Tcl::Tk::MainLoop;
 
 
 BEGIN {

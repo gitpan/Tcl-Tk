@@ -1,3 +1,26 @@
+2006-10-17  Vadim Konovalov
+
+	* demos/wcolors.pl: no Tix geometry; more efficient callbacks;
+	* demos/multiwidget.pl: delete the file
+	* Manifest: mention deleting
+	* lib/Tcl/Tk.pm: rework Scrolled
+	* lib/Tcl/Tk.pm: rework Tcl::Tk::Widget::bind - reduce&improve
+	* lib/Tcl/Tk.pm: remove many widget methods like Tcl::Tk::text
+	* Changes: summary for CPAN release
+
+2006-10-17  Vadim Konovalov
+
+	* lib/Tcl/Tk.pm: Version 0.92
+	* lib/Tcl/Tk.pm: fix security hole in eval "$adjustable_var";
+	* lib/Tcl/Tk.pm: Canvas initialization only when needed
+	* lib/Tcl/Tk.pm: Scrolled improvement
+
+2006-10-16  Vadim Konovalov
+
+	* lib/Tcl/Tk.pm: Tcl::Tk::widget improvement
+	* t/tk-mw.t: goto repository
+	* Changes: summary for CPAN release
+
 2006-10-13  Vadim Konovalov
 
 	* lib/Tcl/Tk.pm: Tcl::Tk::AUTOLOAD, Tcl::Tk::Widget::AUTOLOAD now
@@ -7,7 +30,7 @@
 	* lib/Tcl/Tk.pm: Optionmenu widget reimplemented with snit
 	* lib/Tcl/Tk.pm: ... therefore Tcl::Tk::Widget::MultipleWidget gone!
 	* lib/Tcl/Tk.pm: Scrolled_obsolete gone
-	* lib/t/optmenu.t: widget package name is now a bit different
+	* t/optmenu.t: widget package name is now a bit different
 
 2006-10-06  Vadim Konovalov
 

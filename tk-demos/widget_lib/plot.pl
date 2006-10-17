@@ -7,7 +7,7 @@ sub plot {
 
     # Create a top-level window containing a canvas displaying a simple
     # graph with data points that can be dragged with the pointing device.
-    Tcl::Tk::mainwindow->interp->Eval(<<'EOS');
+    $MW->interp->Eval(<<'EOS');
 set w .plot
 catch {destroy $w}
 toplevel $w

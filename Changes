@@ -1,5 +1,10 @@
 Revision history for Perl extension Tcl::Tk.
 
+0.92    17-oct-2006
+	- robust implementation of creation of widgets package
+	- Scrolled improvement - now wrapped widget could be dealt directly
+	- 'bind' now much better
+
 0.91    16-oct-2006
 	- starting from 0.90 snit is a requirement
 	- Scrolled reimplementation
