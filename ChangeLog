@@ -1,3 +1,16 @@
+2007-05-09  Vadim Konovalov
+
+	* META.yml: calm down cpan indexer
+	* Makefile.PL: check for snit package
+	* test-for-tk.tcl: check for snit package
+
+2007-05-01  Vadim Konovalov
+
+	* lib/Tcl/Tk.pm: Version 0.94
+	* lib/Tcl/Tk.pm: "new" - no more hacks to globally defined variables
+	* lib/Tcl/Tk.pm: new widget "Separator" (BWidgets)
+	* Changes: Version 0.94
+
 2006-10-17  Vadim Konovalov
 
 	* demos/wcolors.pl: no Tix geometry; more efficient callbacks;

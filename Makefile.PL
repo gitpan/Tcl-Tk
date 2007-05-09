@@ -26,7 +26,7 @@ if ($tclshArg) {
 open TCLSH, "$tclsh test-for-tk.tcl|";
 my $res = join '', <TCLSH>;
 
-unless ($res =~ /^ok/m) {
+unless ($res =~ /^ok1/m) {
   die <<EOS;
 
 Your Tcl installation ($tclsh) fails to find Tk package.
@@ -35,10 +35,18 @@ directory; Please check if you can feed 'package require Tk' to tclsh
 EOS
 }
 
+unless ($res =~ /^ok2/m) {
+  die <<EOS;
+
+Your Tk installation fails to find snit package.
+Make sure that it is installed within your Tcl/Tk.
+EOS
+}
+
 WriteMakefile(
     NAME => "Tcl::Tk",
     VERSION_FROM => 'lib/Tcl/Tk.pm',
     PREREQ_PM => {
-	Tcl => 0.85,
+	Tcl => 0.90,
     },
 );

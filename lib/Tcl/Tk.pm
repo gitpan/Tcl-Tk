@@ -6,7 +6,7 @@ use Exporter ('import');
 use vars qw(@EXPORT_OK %EXPORT_TAGS);
 
 @Tcl::Tk::ISA = qw(Tcl);
-$Tcl::Tk::VERSION = '0.92';
+$Tcl::Tk::VERSION = '0.94';
 
 sub WIDGET_CLEANUP() {0}
 
@@ -558,10 +558,6 @@ sub new {
     bless $i, $class;
     $i->SetVar2("env", "DISPLAY", $display, Tcl::GLOBAL_ONLY);
     $i->SetVar("argv0", $0, Tcl::GLOBAL_ONLY);
-    if (defined $::tcl_library) {
-	# hack to redefine search path for TCL installation
-	$i->SetVar('tcl_library',$::tcl_library);
-    }
     push(@argv, "--", @ARGV) if scalar(@ARGV);
     $i->SetVar("argv", [@argv], Tcl::GLOBAL_ONLY);
     # argc is just the values after the --, if any.
@@ -893,10 +889,12 @@ sub Declare {
 sub AUTOLOAD {
     my $int = shift;
     my ($method,$package) = $Tcl::Tk::AUTOLOAD;
+    my $method0;
     for ($method) {
 	s/^(Tcl::Tk::)//
 	    or die "weird inheritance ($method)";
 	$package = $1;
+        $method0 = $method;
 	s/(?<!_)__(?!_)/::/g;
 	s/(?<!_)___(?!_)/_/g;
     }
@@ -946,7 +944,7 @@ sub AUTOLOAD {
 	};
     }
     no strict 'refs';
-    *{"$package$fast$method"} = $sub;
+    *{"$package$fast$method0"} = $sub;
     return $sub->($int,@_);
 }
 
@@ -1389,6 +1387,8 @@ my %ptk2tcltk =
 
      Table       => ['table', 'tbl', 'Tktable'],
 
+     Separator   => ['Separator', 'sep', 'BWidget'],
+
      BrowseEntry => ['ComboBox', 'combo', 'BWidget'],
      ComboBox    => ['ComboBox', 'combo', 'BWidget'],
      ListBox     => ['ListBox', 'lb', 'BWidget'],
@@ -1586,6 +1586,20 @@ sub ROText {
     my $w    = w_uniq($self, "rotext"); # create uniq pref's widget id
     my $text = $int->declare_widget($int->call('rotext', $w, @_), "Tcl::Tk::Widget::ROText");
     return $text;
+}
+
+# Text
+sub _prepare_ptk_Text {
+    require Tcl::Tk::Widget::Text; # get more Text p/Tk compat methods
+}
+# ROText
+sub _prepare_ptk_ROText {
+    require Tcl::Tk::Widget::Text; # get more Text p/Tk compat methods
+}
+
+# Balloon
+sub _prepare_ptk_Balloon {
+    require Tcl::Tk::Widget::Balloon;
 }
 
 # Listbox
@@ -1828,17 +1842,6 @@ sub Menu {
     my $mnu = $int->widget($int->call('menu', $w, %args), "Tcl::Tk::Widget::Menu");
     _process_menuitems($int,$mnu,$mis);
     return $mnu;
-}
-
-# Balloon widget's method are in Tcl/Tk/Widget/Balloon.pm
-sub Balloon {
-    my $self = shift; # this will be a parent widget for newer balloon
-    my $int = $self->interp;
-    my $w    = w_uniq($self, "bln"); # return unique widget id
-    $int->pkg_require('Tix');
-    require "Tcl/Tk/Widget/Balloon.pm";
-    my $bw = $int->declare_widget($int->call('tixBalloon', $w, @_), "Tcl::Tk::Widget::Balloon");
-    return $bw;
 }
 
 sub NoteBook {
