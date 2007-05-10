@@ -1,11 +1,17 @@
 # http://module-build.sourceforge.net/META-spec.html
-#XXXXXXX This is a prototype!!!  It will change in the future!!! XXXXX#
 name:         Tcl-Tk
-version:      0.94
 version_from: lib/Tcl/Tk.pm
 installdirs:  site
 requires:
-    Tcl:                           0.9
-
+  Tcl: 0.90
+no_index:
+  directory:
+    - demos
+    - tk-demos
+keywords:
+  - Tk
+  - Tcl/Tk/Tix
+  - GUI
+auto_regenerate: false
 distribution_type: module
-generated_by: ExtUtils::MakeMaker version 6.17
+generated_by: ExtUtils::MakeMaker version 6.21_01

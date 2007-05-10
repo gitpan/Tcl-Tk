@@ -46,6 +46,7 @@ EOS
 WriteMakefile(
     NAME => "Tcl::Tk",
     VERSION_FROM => 'lib/Tcl/Tk.pm',
+    NO_META => 1,
     PREREQ_PM => {
 	Tcl => 0.90,
     },

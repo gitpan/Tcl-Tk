@@ -1,3 +1,8 @@
+2007-05-11  Vadim Konovalov
+
+	* MANIFEST: add lib/Tcl/Tk/Widget/Text.pm
+	* lib/Tcl/Tk.pm: version 0.95
+
 2007-05-09  Vadim Konovalov
 
 	* META.yml: calm down cpan indexer

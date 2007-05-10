@@ -1,5 +1,9 @@
 Revision history for Perl extension Tcl::Tk.
 
+0.95    11-may-2007
+	- fix lost file Tcl/Tk/Widget/Text.pm borrowed from perlTk
+	- actually make CPAN indexer happy
+
 0.94    09-may-2007
 	- Separator widget
 	- check for snit package
