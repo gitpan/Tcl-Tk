@@ -6,7 +6,7 @@ use ExtUtils::MakeMaker;
 
 my $tclshArg;
 my $tclsh = "tclsh";
-if ($^O eq 'FreeBSD') {$tclsh.='8.4'}
+if ($^O eq 'freebsd') {$tclsh.='8.4'}
 
 GetOptions("tclsh=s", \$tclshArg,
 	  )

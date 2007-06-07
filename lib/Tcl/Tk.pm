@@ -6,7 +6,7 @@ use Exporter ('import');
 use vars qw(@EXPORT_OK %EXPORT_TAGS);
 
 @Tcl::Tk::ISA = qw(Tcl);
-$Tcl::Tk::VERSION = '0.95';
+$Tcl::Tk::VERSION = '0.97';
 
 sub WIDGET_CLEANUP() {0}
 
@@ -79,11 +79,6 @@ the top of your program.
 
     use Tcl::Tk;
 
-Export tag :perltk exports few convenience functions similar to perl/Tk,
-so use syntax C<use Tcl::Tk qw(:perlTk);> in case you're in habit of writing 
-directly C<MainLoop> instead of C<< $interp->MainLoop >> or C<Tcl::Tk::MainLoop>
-    
-
 =head2 Creating a Tcl interpreter for Tk
 
 Before you start using widgets, an interpreter (at least one) should be
@@ -91,17 +86,19 @@ created, which will manage all things in Tcl.
 
 To create a Tcl interpreter initialised for Tk, use
 
-    my $int = new Tcl::Tk (DISPLAY, NAME, SYNC);
+    my $int = new Tcl::Tk;
 
-All arguments are optional. This creates a Tcl interpreter object $int,
-and creates a main toplevel window. The window is created on display
-DISPLAY (defaulting to the display named in the DISPLAY environment
-variable) with name NAME (defaulting to the name of the Perl program,
-i.e. the contents of Perl variable $0). If the SYNC argument is present
-and true then an I<XSynchronize()> call is done ensuring that X events
-are processed synchronously (and thus slowly). This is there for
-completeness and is only very occasionally useful for debugging errant
-X clients (usually at a much lower level than Tk users will want).
+Optionally DISPLAY argument could be specified: C<my $int = new Tcl::Tk(":5");>.
+This creates a Tcl interpreter object $int, and creates a main toplevel
+window. The window is created on display DISPLAY (defaulting to the display
+named in the DISPLAY environment variable)
+
+The Tcl/Tk interpreter is created automatically by the call to C<MainWindow> and
+C<tkinit> methods, and main window object is returned in this case:
+
+  use Tcl::Tk;
+  my $mw = Tcl::Tk::MainWindow;
+  my $int = $mw->interp;
 
 =head2 Entering the main event loop
 
@@ -285,6 +282,10 @@ C<.path method parameter1 parameter2> I<....>
 
 C<.path method submethod parameter1 parameter2> I<....>
 
+=item if C<$method> contains several capital letter inside name, C<methodSubmethSubsubmeth>
+
+C<.path method submeth subsubmeth parameter1 parameter2> I<....>
+
 =head4 faster way of invoking methods on widgets
 
 In case it is guaranteed that preprocessing of C<@parameters> are not required
@@ -446,9 +447,17 @@ you can always use C<< $int->Eval('...') >> approach.
 
 =head2 Miscellaneous methods
 
-In order to provide perl/Tk syntax for Tcl::Tk module, some methods on Tcl/Tk
-side are implemented, which could be useful on their own, even outside Tcl::Tk
-module.
+=head3 C<< $widget->tooltip("text") >> method
+
+Any widget accepts C<tooltip> method, accepting any text as parameter, which
+will be used as floating help text explaining the widget. The widget itself
+is returned, so to provide convenient way of chaining:
+
+  $mw->Button(-text=>"button 1")->tooltip("This is a button, m-kay")->pack;
+  $mw->Entry(-textvariable=>\my $e)->tooltip("enter the text here, m-kay")->pack;
+
+C<tooltip> method uses C<tooltip> package, which is a part of C<tklib> within
+Tcl/Tk, so be sure you have it installed.
 
 =head3 C<< $int->create_rotext() >> method
 
@@ -475,6 +484,34 @@ This way you can even create a perl/Tk-style widget to be initially scrollable:
 The scrolling is taken from snit (scrodgets), and the resulting widget have
 both scrolled options/methods and widget's options/methods.
   
+=head1 Points of special care
+
+=over
+
+=item list context and scalar context
+
+When widget method returns some result, this result becomes transformed
+according to the context, either list or scalar context. Sometimes this
+transformation is right, but sometimes its not. Unfortunately there are many
+cases, when Tcl/Tk returns a string, and this string become broken into words,
+because the function call is placed in list context.
+
+In such cases concatenate such call with empty string to force right behaviour:
+
+  use Tcl::Tk;
+  my $mw = Tcl::Tk::tkinit;
+  my $int = $mw->interp;
+  my $but = $mw->Button(-text=>'1 2  3')->pack;
+  print "[", $but->cget('-text'), "] wrong - widget method returns 3 values!\n";
+  print "[", "".$but->cget('-text'), "] CORRECT - 1 value in scalar context\n";
+  $int->MainLoop;
+
+Actually, the example above will work correctly, because currently list of
+function names having list results are maintained. But please contact developers
+if you find misbehaving widget method!
+
+=back
+
 =head1 BUGS
 
 Currently work is in progress, and some features could change in future
@@ -534,35 +571,19 @@ my %preloaded_tk; # (interpreter independent thing. is this right?)
 
 #
 sub new {
-    my ($class, $name, $display, $sync) = @_;
-    Carp::croak 'Usage: $interp = new Tcl::Tk([$name [, $display [, $sync]]])'
-	if @_ > 4;
-    my($i, $arg, @argv);
-
+    my ($class, $display) = @_;
+    Carp::croak 'Usage: $interp = new Tcl::Tk([$display])'
+	if @_ > 1;
+    my @argv;
     if (defined($display)) {
 	push(@argv, -display => $display);
     } else {
 	$display = $ENV{DISPLAY} || '';
     }
-    if (defined($name)) {
-	push(@argv, -name => $name);
-    } else {
-	($name = $0) =~ s{.*/}{};
-    }
-    if (defined($sync)) {
-	push(@argv, "-sync");
-    } else {
-	$sync = 0;
-    }
-    $i = new Tcl;
+    my $i = new Tcl;
     bless $i, $class;
     $i->SetVar2("env", "DISPLAY", $display, Tcl::GLOBAL_ONLY);
-    $i->SetVar("argv0", $0, Tcl::GLOBAL_ONLY);
-    push(@argv, "--", @ARGV) if scalar(@ARGV);
     $i->SetVar("argv", [@argv], Tcl::GLOBAL_ONLY);
-    # argc is just the values after the --, if any.
-    # The other args are consumed by Tk.
-    $i->SetVar("argc", scalar(@ARGV), Tcl::GLOBAL_ONLY);
     $i->SetVar("tcl_interactive", 0, Tcl::GLOBAL_ONLY);
     $i->SUPER::Init();
     $i->pkg_require('Tk', $i->GetVar('tcl_version'));
@@ -983,6 +1004,15 @@ sub widget_data {
     return ($Wdata->{$self->path} || ($Wdata->{$self->path}={}));
 }
 
+# few convenience methods
+sub tooltip {
+    my $self = shift;
+    my $ttext = shift;
+    $self->interp->packageRequire('tooltip');
+    $self->interp->call("tooltip::tooltip",$self,$ttext);
+    $self;
+}
+
 #
 # few geometry methods here
 sub pack {
@@ -1397,6 +1427,7 @@ my %ptk2tcltk =
      TileNoteBook => ['tile::notebook', 'tnb', 'tile'],
 
      Treectrl    => ['treectrl', 'treectrl', 'treectrl'],
+     Spinbox     => ['spinbox', 'spn',],
 
      Balloon     => ['tixBalloon', 'bl', 'Tix'],
      DirTree     => ['tixDirTree', 'dirtr', 'Tix'],
@@ -2015,13 +2046,21 @@ sub Tree {
     return $tree;
 }
 
+# ----------------------------------------------------------------------------
+#   Scrolled implementation.
+# unless found in following table, lc(type) will be used to map scrolled type
+my %scrolled_map = (
+    ListBox=>'ListBox', # for BWidget's ListBox
+    Listbox => 'listbox', # for ordinary listbox
+);
+
 # Scrolled is implemented via snit
 sub Scrolled {
     my $self = shift; # this will be a parent widget for newer Scrolled
     my $int = $self->interp;
     my $wtype = shift; # what type of scrolled widget
     die "wrong 'scrolled' type $wtype" unless $wtype =~ /^\w+$/;
-    my $lwtype = lc($wtype);
+    my $lwtype = $scrolled_map{$wtype} || lc($wtype);
     my %args = @_;
 
     # some widgets do their own scrolling... exclusions, exclusions.
@@ -2058,6 +2097,9 @@ sub Scrolled {
     my $scrw = $int->declare_widget($int->call("scrolled_$lwtype", $w, %args), "Tcl::Tk::Widget::$wtype");
     return $scrw;
 }
+# end-of-scrolled
+# ----------------------------------------------------------------------------
+
 
 # substitute Tk's "tk_optionMenu" for this
 sub Optionmenu_obsolete {
@@ -2261,6 +2303,14 @@ sub DESTROY {}			# do not let AUTOLOAD catch this method
 # Let Tcl/Tk process required method via AUTOLOAD mechanism
 #
 
+# %lists hash holds names of methods returning *list* of values
+# (all methods not listed here are expected to return single value)
+my %lists = map {$_=>1} qw(
+    bbox configure dlineinfo dump
+    markNames tagBind
+    windowNames
+    formInfo formSlaves
+);
 sub AUTOLOAD {
     my $w = shift;
     my ($method,$package,$wtype) = ($Tcl::Tk::Widget::AUTOLOAD,undef,undef);
@@ -2337,7 +2387,7 @@ sub AUTOLOAD {
     if ($method =~ /^([a-z]+)([A-Z][a-z]+)$/) {
         my ($meth, $submeth) = ($1, lcfirst($2));
 	if ($meth eq "grid" || $meth eq "pack") {
-	    # grid/pack commands reorder $wp in the call
+	    # grid/pack commands reorder $wp in the call.
 	    $sub = $fast ? sub {
 		my $w = shift;
 		$w->interp->invoke($meth, $submeth, $w->path, @_);
@@ -2349,10 +2399,10 @@ sub AUTOLOAD {
 	    # after commands don't include $wp in the call
 	    $sub = $fast ? sub {
 		my $w = shift;
-		$w->interp->invoke($meth, $submeth, @_);
+		scalar($w->interp->invoke($meth, $submeth, @_));
 	    } : sub {
 		my $w = shift;
-		$w->interp->call($meth, $submeth, @_);
+		scalar($w->interp->call($meth, $submeth, @_));
 	    };
 	} else {
 	    # Default camel-case, break into $wp $method $submethod and call
@@ -2364,26 +2414,79 @@ sub AUTOLOAD {
 		    $w->$meth($submeth,@_);
 		};
 	    } else {
-		# .. otherwise ordinary camel case invocation
-		$sub = $fast ? sub {
-		    my $w = shift;
-		    $w->interp->invoke($w->path, $meth, $submeth, @_);
-		} : sub {
-		    my $w = shift;
-		    $w->interp->call($w->path, $meth, $submeth, @_);
-		};
+		# ... otherwise ordinary camel case invocation
+		if (exists $lists{$method}) {
+		    $sub = $fast ? sub {
+			my $w = shift;
+			$w->interp->invoke($w->path, $meth, $submeth, @_);
+		    } : sub {
+			my $w = shift;
+			$w->interp->call($w->path, $meth, $submeth, @_);
+		    };
+		} else {
+		    $sub = $fast ? sub {
+			my $w = shift;
+			scalar($w->interp->invoke($w->path, $meth, $submeth, @_));
+		    } : sub {
+			my $w = shift;
+			scalar($w->interp->call($w->path, $meth, $submeth, @_));
+		    };
+		}
+	    }
+	}
+    }
+    elsif ($method =~ /^([a-z]+)([A-Z][A-Za-z]+)$/) {
+	# even more camelCaseMethod
+        my ($meth, $submeth) = ($1, $2);
+	my @submethods = map{lcfirst($_)} $submeth=~/([A-Z][a-z]+)/g;
+	# Default camel-case, break into $wp $method $submethod and call
+	# if method was created with 'create_method_in_widget_package' it should
+	# be called instead...
+	if (exists $created_w_packages{$wtype}->{$meth}) {
+	    $sub = sub {
+	        my $w = shift;
+	        $w->$meth(@submethods,@_);
+	    };
+	} else {
+	    # ... otherwise ordinary camel case invocation
+	    if (exists $lists{$method}) {
+	        $sub = $fast ? sub {
+	    	my $w = shift;
+	    	$w->interp->invoke($w->path, $meth, @submethods, @_);
+	        } : sub {
+	    	my $w = shift;
+	    	$w->interp->call($w->path, $meth, @submethods, @_);
+	        };
+	    } else {
+	        $sub = $fast ? sub {
+	    	my $w = shift;
+	    	scalar($w->interp->invoke($w->path, $meth, @submethods, @_));
+	        } : sub {
+	    	my $w = shift;
+	    	scalar($w->interp->call($w->path, $meth, @submethods, @_));
+	        };
 	    }
 	}
     }
     else {
 	# Default case, call as submethod of $wp
-	$sub = $fast ? sub {
-	    my $w = shift;
-	    $w->interp->invoke($w, $method, @_);
-	} : sub {
-	    my $w = shift;
-	    $w->interp->call($w, $method, @_);
-	};
+	if (exists $lists{$method}) {
+	    $sub = $fast ? sub {
+		my $w = shift;
+		$w->interp->invoke($w, $method, @_);
+	    } : sub {
+		my $w = shift;
+		$w->interp->call($w, $method, @_);
+	    };
+	} else {
+	    $sub = $fast ? sub {
+		my $w = shift;
+		scalar($w->interp->invoke($w, $method, @_));
+	    } : sub {
+		my $w = shift;
+		scalar($w->interp->call($w, $method, @_));
+	    };
+	}
     }
     {
 	# create method $method in package $package

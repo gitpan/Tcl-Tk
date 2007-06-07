@@ -1,3 +1,18 @@
+2007-05-12  Vadim Konovalov
+
+	* lib/Tcl/Tk.pm: version 0.97
+	* lib/Tcl/Tk.pm: Tcl::Tk::new much cleaner (no hack callbacks, etc)
+	* lib/Tcl/Tk.pm: new widget Spinbox
+	* lib/Tcl/Tk.pm: new method for all widgets $w->tooltip("text")
+	* lib/Tcl/Tk.pm: AUTOLOAD for widgets now also allow MultiCamelMeth
+	* lib/Tcl/Tk.pm: widget methods now are expecting to return single
+	value by default, except for know exclusions 
+	* Changes: Version 0.97
+
+2007-05-12  Vadim Konovalov
+
+	* Makefile.PL: change 'FreeBSD' to 'freebsd', according to Slaven
+
 2007-05-11  Vadim Konovalov
 
 	* MANIFEST: add lib/Tcl/Tk/Widget/Text.pm
