@@ -2,36 +2,13 @@ package Tcl::Tk;
 
 use strict;
 use Tcl;
-use Exporter ('import');
+use Exporter 'import';
 use vars qw(@EXPORT_OK %EXPORT_TAGS);
 
 @Tcl::Tk::ISA = qw(Tcl);
-$Tcl::Tk::VERSION = '0.97';
+$Tcl::Tk::VERSION = '0.99';
 
 sub WIDGET_CLEANUP() {0}
-
-$Tcl::Tk::DEBUG ||= 0;
-sub DEBUG() {0}
-sub Tcl::Tk::Widget::DEBUG() {0}
-sub _DEBUG {
-    # Allow for optional debug level and message to be passed in.
-    # If level is passed in, return true only if debugging is at
-    # that level.
-    # If message is passed in, output that message if the level
-    # is appropriate (with any extra args passed to output).
-    my $lvl = shift;
-    return $Tcl::Tk::DEBUG unless defined $lvl;
-    my $msg = shift;
-    if (defined($msg) && ($Tcl::Tk::DEBUG >= $lvl)) { print STDERR $msg, @_; }
-    return ($Tcl::Tk::DEBUG >= $lvl);
-}
-
-if (DEBUG()) {
-    # The gestapo throws warnings whenever Perl/Tk modules are requested.
-    # It also hijacks such requests and returns an empty module in its
-    # place.
-    unshift @INC, \&tk_gestapo;
-}
 
 =head1 NAME
 
@@ -572,8 +549,10 @@ my %preloaded_tk; # (interpreter independent thing. is this right?)
 #
 sub new {
     my ($class, $display) = @_;
-    Carp::croak 'Usage: $interp = new Tcl::Tk([$display])'
-	if @_ > 1;
+    if (@_ > 2) {
+        require Carp;
+        Carp::croak('Usage: $interp = new Tcl::Tk([$display])');
+    }
     my @argv;
     if (defined($display)) {
 	push(@argv, -display => $display);
@@ -736,9 +715,6 @@ sub Exists($) {
     }
     return $tkinterp->icall('winfo','exists',$wid);
 }
-# do this only when tk_gestapo on?
-# In normal case Tcl::Tk::Exists should be used.
-#*{Tk::Exists} = \&Tcl::Tk::Exists;
 
 sub widgets {
     \%W;
@@ -781,29 +757,6 @@ sub need_tk {
 	$int->Eval($cmd) if $cmd;
     }
     return 1;
-}
-
-sub tk_gestapo {
-    # When placed first on the INC path, this will allow us to hijack
-    # any requests for 'use Tk' and any Tk::* modules and replace them
-    # with our own stuff.
-    my ($coderef, $module) = @_;  # $coderef is to myself
-    return undef unless $module =~ m!^Tk(/|\.pm$)!;
-
-    my ($package, $callerfile, $callerline) = caller;
-
-    my $fakefile;
-    open(my $fh, '<', \$fakefile) || die "oops";
-
-    $module =~ s!/!::!g;
-    $module =~ s/\.pm$//;
-    $fakefile = <<EOS;
-package $module;
-warn "### $callerfile:$callerline not really loading $module ###";
-sub foo { 1; }
-1;
-EOS
-    return $fh;
 }
 
 # subroutine findINC copied from perlTk/Tk.pm
@@ -926,6 +879,7 @@ sub AUTOLOAD {
     my $fast = '';
     $method =~ s/^_// and do {
 	$fast='_';
+	$method0 =~ s/^_//;
 	if (exists $::Tcl::Tk::{$method}) {
 	    no strict 'refs';
 	    *{"::Tcl::Tk::_$method"} = *{"::Tcl::Tk::$method"};
@@ -953,8 +907,19 @@ sub AUTOLOAD {
 	    my $int = shift;
 	    $int->call($meth, $submeth, @_);
 	};
-    }
-    else {
+    } elsif ($method =~ /^([a-z]+)([A-Z][A-Za-z]+)$/) {
+	# even more camelCaseMethod
+        my ($meth, $submeth) = ($1, $2);
+	my @submethods = map{lcfirst($_)} $submeth=~/([A-Z][a-z]+)/g;
+	# break into $method $submethod and call
+	$sub = $fast ? sub {
+	    my $int = shift;
+	    $int->invoke($meth, @submethods, @_);
+	} : sub {
+	    my $int = shift;
+	    $int->call($meth, @submethods, @_);
+	};
+    } else {
 	# Default case, call as method of $int
 	$sub = $fast ? sub {
 	    my $int = shift;
@@ -1266,7 +1231,7 @@ sub toplevel {
     my $int = $wid->interp;
     my $tlp = $int->icall('winfo','toplevel',$wid->path);
     if ($tlp eq '.') {return $int->mainwindow}
-    return $int->widget($tlp);
+    return $int->widget($tlp, 'Toplevel');
 }
 sub parent {
     my $wid = shift;
@@ -1274,7 +1239,7 @@ sub parent {
     my $res = $int->icall('winfo','parent',$wid->path);
     if ($res eq '') {return ''}
     if ($res eq '.') {return $int->mainwindow}
-    return $int->widget($res);
+    return $int->widget($res,'Widget');
 }
 
 sub bell {
@@ -1288,14 +1253,14 @@ sub children {
     my $int  = $self->interp;
     my @wids = $int->call('winfo', 'children', $self->path, @_);
     # winfo children returns widget paths, so map them to objects
-    return map ($int->widget($_), @wids);
+    return map ($int->widget($_,'Widget'), @wids);
 }
 sub Subwidget {
     my $self = shift;
     my $name = shift;
     my $int  = $self->interp;
     my $subwid = $int->call($self->path, 'Subwidget', $name);
-    return $int->widget($subwid);
+    return $int->widget($subwid,'Widget');
 }
 
 # although this is not the case, we'll think of object returned by 'after'
@@ -1331,7 +1296,7 @@ sub Getimage {
     return $images->{$name} if $images->{$name};
 
     my $int = $self->interp;
-    foreach my $ext (keys %image_formats) {
+    for my $ext (keys %image_formats) {
 	my $path;
 	foreach my $dir (@INC) {
 	    $path = "$dir/Tk/$name.$ext";
@@ -1349,11 +1314,6 @@ sub Getimage {
 	$images->{$name} = $int->call(@args);
 	return $images->{$name};
     }
-
-    # Try built-in bitmaps from Tix
-    #$images->{$name} = $w->Pixmap( -id => $name );
-    #return $images->{$name};
-    _DEBUG(1, "Getimage: MISSING IMAGE $name\n") if DEBUG;
     return;
 }
 
@@ -1387,7 +1347,7 @@ sub w_uniq {
     return "$wp.$type$gwcnt";
 }
 
-# perlTk<->Tcl::Tk mapping in form [widget, wprefix, ?package?]
+# perlTk<->Tcl::Tk mapping in form [widget, wprefix, ?package?, ?{method=>widget_class}?]
 # These will be looked up 1st in AUTOLOAD
 my %ptk2tcltk =
     (
@@ -1418,11 +1378,19 @@ my %ptk2tcltk =
      Table       => ['table', 'tbl', 'Tktable'],
 
      Separator   => ['Separator', 'sep', 'BWidget'],
+     ScrollableFrame => ['ScrollableFrame', 'sfr', 'BWidget',
+			{getframe => 'Frame'}],
+     ScrolledWindow => ['ScrolledWindow', 'sw', 'BWidget'],
+     #TODO types of widget methods here getframe => Frame
+     # so when this widget class is autocreated, these methods
+     # are created also! TBD TODO
 
      BrowseEntry => ['ComboBox', 'combo', 'BWidget'],
      ComboBox    => ['ComboBox', 'combo', 'BWidget'],
      ListBox     => ['ListBox', 'lb', 'BWidget'],
      BWTree      => ['Tree', 'bwtree', 'BWidget'],
+     BWNoteBook  => ['NoteBook', 'bwnb', 'BWidget', 
+			{getframe => 'Frame'}],
 
      TileNoteBook => ['tile::notebook', 'tnb', 'tile'],
 
@@ -1435,6 +1403,17 @@ my %ptk2tcltk =
      TList       => ['tixTList', 'tlist', 'Tix'],
      NoteBook    => ['tixNoteBook', 'nb', 'Tix'],
      );
+
+# hash to track widget methods returning widgets, so we'll assign
+# widget path of returned by Tk into that widget, so it will be
+# bblessed into proper Tcl::Tk::xxxx package.
+my %methods_returning_widgets = ( );
+# NoteBook => {getframe=>'Frame'}
+
+sub widget_method_returns_widget {
+    my ($wtype, $method, $wtype2) = @_;
+    $methods_returning_widgets{$wtype}->{$method} = $wtype2;
+}
 
 # Mapping of pTk camelCase names to Tcl commands.
 # These do not require the actual widget name.
@@ -1519,7 +1498,6 @@ sub create_ptk_widget_sub {
     $wpref ||= lcfirst $wtype;
 
     $interp->pkg_require($tpkg) if $tpkg; # should be moved into widget creation sub?
-    $interp->Eval($tcmd)        if $tcmd; # should be moved into widget creation sub? 
 
     if (exists $replace_options{$ttktype}) {
 	return sub {
@@ -1790,7 +1768,7 @@ sub Menubutton {
 	menu => sub {
 	    my $wid = shift;
 	    my $int = $wid->interp;
-	    return $int->widget("$wid.m");
+	    return $int->widget("$wid.m", "Tcl::Tk::Widget::Menu");
 	},
 	cget => sub {
 	    my $wid = shift;
@@ -1851,13 +1829,13 @@ sub Menu {
 	menu => sub {
 	    my $wid = shift;
 	    my $int = $wid->interp;
-	    return $int->widget("$wid");
+	    return $int->widget("$wid", "Tcl::Tk::Widget::Menu");
 	},
 	cget => sub {
 	    my $wid = shift;
 	    my $int = $wid->interp;
 	    if ($_[0] eq "-menu") {
-		return $int->widget("$wid");
+		return $int->widget("$wid", "Tcl::Tk::Widget::Menu");
 	    } else {
 		die "Finish cget implementation for Menu";
 	    }
@@ -2052,6 +2030,7 @@ sub Tree {
 my %scrolled_map = (
     ListBox=>'ListBox', # for BWidget's ListBox
     Listbox => 'listbox', # for ordinary listbox
+    HList => 'tixHList', # for tix HList
 );
 
 # Scrolled is implemented via snit
@@ -2102,66 +2081,17 @@ sub Scrolled {
 
 
 # substitute Tk's "tk_optionMenu" for this
-sub Optionmenu_obsolete {
-    my $self = shift; # this will be a parent widget for newer Optionmenu
-    my $int = $self->interp;
-
-    # translate parameters
-    my %args = @_;
-
-    my $w  = w_uniq($self, "om"); # return unique widget id
-    my $vref = \do{my $r};
-    $vref = delete $args{'-variable'} if exists $args{'-variable'};
-    my $options = delete $args{'-options'} if exists $args{'-options'};
-    my $replopt = {};
-    for (@$options) {
-	if (ref) {
-	    # anon array [lab=>val]
-	    $replopt->{$_->[0]} = $_->[1];
-	    $_ = $_->[0];
-	}
-    }
-    my $mnu = $int->call('tk_optionMenu', $w, $vref, @$options);
-    $mnu = $int->declare_widget($mnu);
-    $w = $int->declare_widget($w);
-    my $mmw;
-    $mmw = new Tcl::Tk::Widget::MultipleWidget (
-        $int,
-        $w, ['&','-','*','-variable'=>\$vref,
-	    '-textvariable'=>sub {
-		my ($w,$optnam,$optval) = @_;
-		if (exists $mmw->{_replopt}->{$$vref}) {
-		    return \$mmw->{_replopt}->{$$vref};
-		}
-		return $vref;
-	    },
-	    '-menu'=> \$mnu,
-	    '-options'=>sub {
-		print STDERR "***options: {@_}\n";
-		my ($w,$optnam,$optval) = @_;
-		for (@$optval) {
-		    $w->add('command',$_);
-		}
-	    },
-         ],
-	 $mnu, ['&entrycget',],
-    );
-    $mmw->{_replopt} = $replopt if defined $replopt;
-    #for (keys %args) {$mmw->configure($_=>$args{$_})}
-    return $mmw;
-}
-
 sub Optionmenu {
     my $self = shift; # this will be a parent widget for newer Optionmenu
     my $int = $self->interp;
     my %args = @_;
 
-    if ($int->_infoProc('optionmenu') eq '') {
+    if ($int->invoke(qw(info proc optionmenu)) eq '') {
 	$int->Eval(<<'EOS'); # create proper Optionmenu megawidget with snit
 package require snit
 ::snit::widgetadaptor optionmenu {
-    option -variable
-    option -textvariable
+    option -variable -default dummy
+    option -textvariable -default dummy
     option -options -configuremethod configureoptions
     option -menu -cgetmethod cgetmenu
     option -variable -cgetmethod cgetvariable -configuremethod configurevariable
@@ -2170,8 +2100,8 @@ package require snit
     delegate option * to hull
     delegate method * to hull
     constructor {args} {
-	array set pargs $args
-	menubutton $win -textvariable $pargs(-variable) -indicatoron 1 -menu $win.menu \
+	#$self configurevariable -textvariable option(-variable);
+	menubutton $win -textvariable option(-variable) -indicatoron 1 -menu $win.menu \
 		-relief raised -bd 2 -highlightthickness 2 -anchor c \
 		-direction flush
 	menu $win.menu -tearoff 0
@@ -2181,12 +2111,13 @@ package require snit
 	$self configurelist $args
     }
     method configurevariable {opt val} {
-	#puts "configurevariable... $opt=$val;"
+	puts "configurevariable... $opt=$val;"
 	# TODO following line write better
 	set perlvar $val
 	set "var$win" [eval "return $$val"]
     }
     method cgetvariable {opt} {
+	puts "cgetvariable... $opt"
 	return $perlvar
     }
     method cgetmenu {args} {return $menu}
@@ -2273,6 +2204,14 @@ sub create_widget_package {
 		${"Tcl::Tk::Widget::"}{"_prepare_ptk_$widgetname"}->();
 	    }
 	}
+	# 2011-01-11 
+	# if this widget has known widget returning methods, initiate them here
+	my $known_w_meths = $ptk2tcltk{$widgetname}->[3];
+	if ($known_w_meths) {
+	    for (keys %$known_w_meths) {
+		widget_method_returns_widget($widgetname,$_,$known_w_meths->{$_});
+	    }
+	}
 	# Add this widget class to ptk_w_names so the AUTOLOADer properly
 	# identifies it for creating class methods
 	#$widgetname = quotemeta($widgetname); # (no need to prevent chars corrupting regexp)
@@ -2282,6 +2221,7 @@ sub create_widget_package {
     return 0;
 }
 # this subroutine creates a method in widget's package
+# '" #syntax calm down
 sub create_method_in_widget_package {
     my $widgetname = shift;
     create_widget_package($widgetname);
@@ -2292,8 +2232,22 @@ sub create_method_in_widget_package {
 	$created_w_packages{$widgetname}->{$widgetmethod}++;
 	no strict 'refs';
 	my $package = "Tcl::Tk::Widget::$widgetname";
-	*{"${package}::$widgetmethod"} = $sub;
-	*{"${package}::_$widgetmethod"} = $sub;
+	# 2011-01-11 if we know that this method returns a widget of said type
+	if (exists $methods_returning_widgets{$widgetname}->{$widgetmethod}) {
+	    # ? should we correctly process context here?
+	    # no, because all we must to do is to return widget
+	    my $sub1 = sub {
+		my $w = &$sub;
+		my $int = $tkinterp;#?; how can I obtain interp here?
+		warn "getting interp here TODO";
+		return $int->widget($w,$methods_returning_widgets{$widgetname}->{$widgetmethod});
+	    };
+	    *{"${package}::$widgetmethod"} = $sub1;
+	    *{"${package}::_$widgetmethod"} = $sub1;
+	} else {
+	    *{"${package}::$widgetmethod"} = $sub;
+	    *{"${package}::_$widgetmethod"} = $sub;
+	}
     }
 }
 
@@ -2307,9 +2261,10 @@ sub DESTROY {}			# do not let AUTOLOAD catch this method
 # (all methods not listed here are expected to return single value)
 my %lists = map {$_=>1} qw(
     bbox configure dlineinfo dump
-    markNames tagBind
-    windowNames
+    markNames tagBind tagRanges tagPrevrange tagNextrange
     formInfo formSlaves
+    curselection
+    windowNames
 );
 sub AUTOLOAD {
     my $w = shift;
@@ -2387,7 +2342,7 @@ sub AUTOLOAD {
     if ($method =~ /^([a-z]+)([A-Z][a-z]+)$/) {
         my ($meth, $submeth) = ($1, lcfirst($2));
 	if ($meth eq "grid" || $meth eq "pack") {
-	    # grid/pack commands reorder $wp in the call.
+	    # grid/pack commands reorder $wp in the call
 	    $sub = $fast ? sub {
 		my $w = shift;
 		$w->interp->invoke($meth, $submeth, $w->path, @_);
@@ -2451,19 +2406,19 @@ sub AUTOLOAD {
 	    # ... otherwise ordinary camel case invocation
 	    if (exists $lists{$method}) {
 	        $sub = $fast ? sub {
-	    	my $w = shift;
-	    	$w->interp->invoke($w->path, $meth, @submethods, @_);
+	    	    my $w = shift;
+	    	    $w->interp->invoke($w->path, $meth, @submethods, @_);
 	        } : sub {
-	    	my $w = shift;
-	    	$w->interp->call($w->path, $meth, @submethods, @_);
+	    	    my $w = shift;
+	    	    $w->interp->call($w->path, $meth, @submethods, @_);
 	        };
 	    } else {
 	        $sub = $fast ? sub {
-	    	my $w = shift;
-	    	scalar($w->interp->invoke($w->path, $meth, @submethods, @_));
+	    	    my $w = shift;
+	    	    scalar($w->interp->invoke($w->path, $meth, @submethods, @_));
 	        } : sub {
-	    	my $w = shift;
-	    	scalar($w->interp->call($w->path, $meth, @submethods, @_));
+	    	    my $w = shift;
+	    	    scalar($w->interp->call($w->path, $meth, @submethods, @_));
 	        };
 	    }
 	}
@@ -2487,6 +2442,16 @@ sub AUTOLOAD {
 		scalar($w->interp->call($w, $method, @_));
 	    };
 	}
+    }
+    if (exists $methods_returning_widgets{$wtype}->{$method}) {
+	my $sub0 = $sub;
+	my $sub1 = sub {
+	    my $w = &$sub0;
+	    my $int = $tkinterp;#?; how can I obtain interp here?
+	    warn "getting interp here TODO";
+	    return $int->widget($w,$methods_returning_widgets{$wtype}->{$method});
+	};
+	$sub = $sub1;
     }
     {
 	# create method $method in package $package
@@ -2545,3 +2510,4 @@ sub cget {
 }
 
 1;
+

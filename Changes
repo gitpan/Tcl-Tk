@@ -1,5 +1,16 @@
 Revision history for Perl extension Tcl::Tk.
 
+0.99	13-jan-2011
+	- removed $Tcl::Tk::DEBUG, sub _DEBUG, sub tkgestapo etc.
+	- sub new more Carp-friendly
+	- better _fast and manyCamelCaseMethods handling
+	- now wdiget methods that return widgets could be specified,
+	  (need documenting)
+	- Exporter was used not right WRT tags
+	- fix Optionmenu implementation, remove Optionmenu_obsolete
+	- TODO changed
+	- demos/tcltkdb.pm seriously reworked
+
 0.97    07-jun-2007
 	- $widget->camelCaseMethodSubmethodSubsubmethod
 	- cleaner Tcl::Tk::new method
