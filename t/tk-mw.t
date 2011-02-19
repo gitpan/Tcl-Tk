@@ -8,10 +8,10 @@ BEGIN
    plan test => 7;
   };
 
-use Tcl::Tk qw/:perlTk/;
+use Tcl::Tk;
 
 my $mw;
-eval {$mw = MainWindow->new();};
+eval {$mw = Tcl::Tk::MainWindow->new();};
 ok($@, "", "can't create MainWindow");
 ok(Tcl::Tk::Exists($mw), 1, "MainWindow creation failed");
 
@@ -34,4 +34,4 @@ ok($mw->cget('-title'), 'new title');
 ok($mw->cget('-cursor'), 'star');
 
 $mw->after(3000,sub{$mw->destroy});
-MainLoop;
+Tcl::Tk::MainLoop;

@@ -1,5 +1,15 @@
 Revision history for Perl extension Tcl::Tk.
 
+1.03	19-feb-2011
+	- remove need_tk
+	- for a widget method now could be specified that it returns
+	  another widget (so it Tcl::Tk::Widget::xxx is instantiated)
+	- for a widget now could be specified methods that it processed
+	  itself (i.e. $canv->raise will be transformed to ".canv raise"
+	  and not to "raise .canv")
+	- small cleanups of Tcl::Tk and one bug fix for MainWindow
+	- tcltkdb.pm demo is better
+
 0.99	13-jan-2011
 	- removed $Tcl::Tk::DEBUG, sub _DEBUG, sub tkgestapo etc.
 	- sub new more Carp-friendly

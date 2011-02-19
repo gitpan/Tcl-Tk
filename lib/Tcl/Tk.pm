@@ -6,7 +6,7 @@ use Exporter 'import';
 use vars qw(@EXPORT_OK %EXPORT_TAGS);
 
 @Tcl::Tk::ISA = qw(Tcl);
-$Tcl::Tk::VERSION = '0.99';
+$Tcl::Tk::VERSION = '1.03';
 
 sub WIDGET_CLEANUP() {0}
 
@@ -566,21 +566,20 @@ sub new {
     $i->SetVar("tcl_interactive", 0, Tcl::GLOBAL_ONLY);
     $i->SUPER::Init();
     $i->pkg_require('Tk', $i->GetVar('tcl_version'));
-    # $i->update; # WinCE helper. TODO - remove from RELEASE
     my $mwid = $i->invoke('winfo','id','.');
     $W{PATH}->{$mwid} = '.';
     $W{INT}->{$mwid} = $i;
     $W{MWID}->{'.'} = $mwid;
     my $_mainwindow = \$mwid;
-    $W{mainwindow}->{"$i"} = $_mainwindow;
     bless($_mainwindow, 'Tcl::Tk::Widget::MainWindow');
+    $W{mainwindow}->{"$i"} = $_mainwindow;
     $i->call('trace', 'add', 'command', '.', 'delete',
 	 sub { for (keys %W) {$W{$_}->{$mwid} = undef; }});
     $i->ResetResult();
     $Tcl::Tk::TK_VERSION = $i->GetVar("tk_version");
     # Only do this for DEBUG() ?
-    $Tk::VERSION = $Tcl::Tk::TK_VERSION;
-    $Tk::VERSION =~ s/^(\d)\.(\d)/${1}0$2/;
+    # $Tk::VERSION = $Tcl::Tk::TK_VERSION;
+    # $Tk::VERSION =~ s/^(\d)\.(\d)/${1}0$2/;
     unless (defined $tkinterp) {
 	# first call, create command-helper in TCL to trace widget destruction
 	$i->CreateCommand("::perl::w_del", \&widget_deletion_watcher);
@@ -647,7 +646,6 @@ sub declare_widget {
 sub widget_deletion_watcher {
     my (undef,$int,undef,$path) = @_;
     #print STDERR "[D:$path]";
-    $int->delete_widget_refs($path);
 }
 
 # widget_data return anonymous hash that could be used to hold any 
@@ -739,24 +737,6 @@ sub pkg_require {
 	return;
     }
     return $preloaded_tk{$id};
-}
-
-sub need_tk {
-    # DEPRECATED: Use pkg_require and call instead.
-    my $int = shift;
-    my $pkg = shift;
-    my $cmd = shift || '';
-    warn "DEPRECATED CALL: need_tk($pkg, $cmd), use pkg_require\n";
-    if ($pkg eq 'ptk-Table') {
-        require Tcl::Tk::Table;
-    }
-    else {
-	# Only require the actual package once
-	my $ver = $int->pkg_require($pkg);
-	return 0 if !defined($ver);
-	$int->Eval($cmd) if $cmd;
-    }
-    return 1;
 }
 
 # subroutine findINC copied from perlTk/Tk.pm
@@ -947,6 +927,59 @@ use overload
     'eq' => sub {my $self = shift; return $self->path eq shift},
     'ne' => sub {my $self = shift; return $self->path ne shift};
 
+# first, a special sub that will serve to override some of common widget
+# methods, such as raise, lower, etc
+# (because Canvas's, BWNoteBook widget raise means different thing, etc
+
+# bypass_widget_sub:
+# given a widget method name and widget class, create subroutine with this
+# name in that widget's package, so that method of same name in 
+# Tcl::Tk::Widget package will not be called
+#
+# in other words, most widget methods work this way:
+#   $widget->method
+# transformed as
+#   .widget method
+# but there are several exclusions, where 
+#   $widget->method
+# transformed as
+#   method .widget
+#
+# our goal is to suppress such exclusions for some widget methods
+#
+# in perfect world, this subroutine would not be needed.
+# in our world, perl/Tk compatibility takes us back, where geometry
+# methods became widget methods, and thus occupied name
+#
+# e.g. $widget->raise is a geometry method for all widgets, but
+# BWNoteBook has method with this name
+#
+# so 
+#   raise .widget
+# versus
+#   .widget raise
+#
+# canvas and text have similar problem
+#
+sub bypass_widget_sub {
+    my ($method, $widget_class) = @_;
+    my $sub = sub {
+	my $self = shift;
+	$self->interp->call($self->path, $method, @_);
+    };
+    my $_sub = sub {
+	my $self = shift;
+	$self->interp->icall($self->path, $method, @_);
+    };
+    {
+	no strict 'refs';
+	*{"::Tcl::Tk::Widget::$widget_class\::$method"} = $sub;
+	*{"::Tcl::Tk::Widget::$widget_class\::_$method"} = $_sub;
+    }
+}
+
+# common for all widgets methods
+
 sub iconimage {
     # this should set the wm iconimage/iconbitmap with an image
     warn "NYI: iconimage";
@@ -973,7 +1006,7 @@ sub widget_data {
 sub tooltip {
     my $self = shift;
     my $ttext = shift;
-    $self->interp->packageRequire('tooltip');
+    $self->interp->pkg_require('tooltip');
     $self->interp->call("tooltip::tooltip",$self,$ttext);
     $self;
 }
@@ -1101,7 +1134,6 @@ sub destroy {
     my $int = $self->interp;
     my $wp = $self->path;
     $int->call('destroy',$wp,@_);
-    $int->delete_widget_refs($wp);
 }
 
 # for compatibility (TODO -- more methods could be AUTOLOADed)
@@ -1280,13 +1312,12 @@ sub cancel {
 # Getimage compatability routine
 #
 
-my %image_formats =
-    (
+my %image_formats = (
      xpm => 'photo',
      gif => 'photo',
      ppm => 'photo',
      xbm => 'bitmap'
-     );
+);
 
 sub Getimage {
     my $self = shift;
@@ -1343,17 +1374,15 @@ sub w_uniq {
     # Ensure that we don't end up with '..btn01' as a widget name
     $wp = '' if $wp eq '.';
     $gwcnt++;
-    Tcl::_current_refs_widget("$wp.$type$gwcnt");
     return "$wp.$type$gwcnt";
 }
 
-# perlTk<->Tcl::Tk mapping in form [widget, wprefix, ?package?, ?{method=>widget_class}?]
+# perlTk<->Tcl::Tk mapping in form [widget, wprefix, ?package?, ?{method=>widget_class}?, ?[by_passed_method1, by_passed_method2, ...]?]
 # These will be looked up 1st in AUTOLOAD
-my %ptk2tcltk =
-    (
+my %ptk2tcltk = (
      Button      => ['button', 'btn',],
      Checkbutton => ['checkbutton', 'cb',],
-     Canvas      => ['canvas', 'can',],
+     Canvas      => ['canvas', 'can', undef, undef, [qw[raise lower]]],
      Entry       => ['entry', 'ent',],
      Frame       => ['frame', 'f',],
      LabelFrame  => ['labelframe', 'lf',],
@@ -1381,16 +1410,17 @@ my %ptk2tcltk =
      ScrollableFrame => ['ScrollableFrame', 'sfr', 'BWidget',
 			{getframe => 'Frame'}],
      ScrolledWindow => ['ScrolledWindow', 'sw', 'BWidget'],
-     #TODO types of widget methods here getframe => Frame
-     # so when this widget class is autocreated, these methods
-     # are created also! TBD TODO
 
      BrowseEntry => ['ComboBox', 'combo', 'BWidget'],
      ComboBox    => ['ComboBox', 'combo', 'BWidget'],
      ListBox     => ['ListBox', 'lb', 'BWidget'],
      BWTree      => ['Tree', 'bwtree', 'BWidget'],
+
      BWNoteBook  => ['NoteBook', 'bwnb', 'BWidget', 
-			{getframe => 'Frame'}],
+			{getframe => 'Frame'}, 
+			   # i.e. getframe returns 'Frame' widget
+		        ['raise']
+		    ],
 
      TileNoteBook => ['tile::notebook', 'tnb', 'tile'],
 
@@ -1402,7 +1432,7 @@ my %ptk2tcltk =
      HList       => ['tixHList', 'hlist', 'Tix'],
      TList       => ['tixTList', 'tlist', 'Tix'],
      NoteBook    => ['tixNoteBook', 'nb', 'Tix'],
-     );
+);
 
 # hash to track widget methods returning widgets, so we'll assign
 # widget path of returned by Tk into that widget, so it will be
@@ -1419,15 +1449,14 @@ sub widget_method_returns_widget {
 # These do not require the actual widget name.
 # These will be looked up 2nd in AUTOLOAD
 # $w->mapCommand(...) => @qwargs ...
-my %ptk2tcltk_mapper =
-    (
+my %ptk2tcltk_mapper = (
      "optionAdd"        => [ qw(option add) ],
      "font"             => [ qw(font) ],
      "fontCreate"       => [ qw(font create) ],
      "fontNames"        => [ qw(font names) ],
      "waitVariable"     => [ qw(vwait) ], # was tkwait variable
      "idletasks"        => [ qw(update idletasks) ],
-     );
+);
 
 # wm or winfo subroutines, to be checked 4th in AUTOLOAD
 # $w->wmcommand(...) => wm|winfo wmcommand $w ...
@@ -1631,16 +1660,6 @@ sub _prepare_ptk_Listbox {
 # Canvas
 sub _prepare_ptk_Canvas {
     create_method_in_widget_package ('Canvas', 
-	raise => sub {
-	    my $self = shift;
-	    my $wp = $self->path;
-	    $self->interp->call($wp,'raise',@_);
-	},
-	lower => sub {
-	    my $self = shift;
-	    my $wp = $self->path;
-	    $self->interp->call($wp,'lower',@_);
-	},
 	bind => sub {
 	    my $self = shift;
 	    if ($#_==2) {
@@ -1685,8 +1704,11 @@ sub _addcascade {
     my $mnu = shift;
     my $mnup = $mnu->path;
     my $int = $mnu->interp;
-    my $smnu = $mnu->Menu; # return unique widget id
     my %args = @_;
+    my $smnu = delete $args{'-menu'};
+    if (!defined($smnu)) {
+        $smnu = $mnu->Menu;
+    }
     my $tearoff = delete $args{'-tearoff'};
     if (defined($tearoff)) {
         $smnu->configure(-tearoff => $tearoff);
@@ -1695,7 +1717,6 @@ sub _addcascade {
     my $mis = delete $args{'-menuitems'};
     _process_menuitems($int,$smnu,$mis);
     _process_underline(\%args);
-    #$int->call("$mnu",'add','cascade', %args);
     $mnu->add('cascade',%args);
     return $smnu;
 }
@@ -2081,6 +2102,7 @@ sub Scrolled {
 
 
 # substitute Tk's "tk_optionMenu" for this
+my %_om_ref_track; # dirty hack, but fortunately never used
 sub Optionmenu {
     my $self = shift; # this will be a parent widget for newer Optionmenu
     my $int = $self->interp;
@@ -2111,13 +2133,13 @@ package require snit
 	$self configurelist $args
     }
     method configurevariable {opt val} {
-	puts "configurevariable... $opt=$val;"
+	#puts "configurevariable... $opt=$val;"
 	# TODO following line write better
 	set perlvar $val
 	set "var$win" [eval "return $$val"]
     }
     method cgetvariable {opt} {
-	puts "cgetvariable... $opt"
+	#puts "cgetvariable... $opt;$perlvar"
 	return $perlvar
     }
     method cgetmenu {args} {return $menu}
@@ -2135,7 +2157,7 @@ EOS
 	        my ($self,$opt) = @_;
 	        my $oo = $self->interp->invoke($self->path,"cget",$opt);
 	        if ($opt eq "-variable") {
-	            return $self->interp->return_ref($oo);
+		    return $_om_ref_track{$self->path};
 	        } elsif ($opt eq "-menu") {
 	            return $self->interp->widget($oo,"Menu");
 	        }
@@ -2150,6 +2172,9 @@ EOS
         $_ = [$_, $_] unless ref;
     }
     $args{'-options'} = \@ao;
+    if ($args{-variable}) {
+	$_om_ref_track{$w} = $args{-variable};
+    }
     my $ow = $int->declare_widget($int->call("optionmenu", $w, %args), "Tcl::Tk::Widget::Optionmenu");
     return $ow;
 }
@@ -2171,7 +2196,7 @@ sub Declare {
     }
     $wtype = quotemeta($wtype); # to prevent chars corrupting regexp
     $ptk2tcltk{$wtype} = [$ttktype, $args{'-prefix'}, $args{'-require'},
-			  $args{'-command'}];
+			];
     $ptk_w_names .= "|$wtype";
 }
 
@@ -2212,6 +2237,13 @@ sub create_widget_package {
 		widget_method_returns_widget($widgetname,$_,$known_w_meths->{$_});
 	    }
 	}
+	# if this widget has methods to bypass, use it
+	my $bypass_meths = $ptk2tcltk{$widgetname}->[4];
+	if ($bypass_meths) {
+	    for (@$bypass_meths) {
+		bypass_widget_sub($_, $widgetname);
+	    }
+	}
 	# Add this widget class to ptk_w_names so the AUTOLOADer properly
 	# identifies it for creating class methods
 	#$widgetname = quotemeta($widgetname); # (no need to prevent chars corrupting regexp)
@@ -2237,9 +2269,8 @@ sub create_method_in_widget_package {
 	    # ? should we correctly process context here?
 	    # no, because all we must to do is to return widget
 	    my $sub1 = sub {
+		my $int = $_[0]->interp;
 		my $w = &$sub;
-		my $int = $tkinterp;#?; how can I obtain interp here?
-		warn "getting interp here TODO";
 		return $int->widget($w,$methods_returning_widgets{$widgetname}->{$widgetmethod});
 	    };
 	    *{"${package}::$widgetmethod"} = $sub1;
@@ -2446,9 +2477,8 @@ sub AUTOLOAD {
     if (exists $methods_returning_widgets{$wtype}->{$method}) {
 	my $sub0 = $sub;
 	my $sub1 = sub {
+	    my $int = $_[0]->interp;
 	    my $w = &$sub0;
-	    my $int = $tkinterp;#?; how can I obtain interp here?
-	    warn "getting interp here TODO";
 	    return $int->widget($w,$methods_returning_widgets{$wtype}->{$method});
 	};
 	$sub = $sub1;

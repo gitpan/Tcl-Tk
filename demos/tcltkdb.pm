@@ -43,15 +43,7 @@ package DB;
 #   */
 # 
 # ptkdb.frame*font: fixed                           /* Menu Bar */
-# ptkdb.frame.menubutton.font: fixed                /* File menu */
 # ptkdb.frame2.frame1.rotext.font: fixed            /* Code Pane */
-#              
-# ptkdb.notebook.subspage*font: fixed               /* Subroutine Notebook Page */
-# ptkdb.notebook.brkptspage*entry.font: fixed       /* Delete Breakpoint Buttons */
-# ptkdb.notebook.brkptspage*button.font: fixed      /* Breakpoint Expression Entries */
-# ptkdb.notebook.brkptspage*button1.font: fixed     /* Breakpoint Expression Entries */
-# ptkdb.notebook.brkptspage*checkbutton.font: fixed /* Breakpoint Checkbuttons */
-# ptkdb.notebook.brkptspage*label.font: fixed       /* Breakpoint "Cond" label */
 #              
 # ptkdb.toplevel.frame.textundo.font: fixed         /* Eval Expression Entry Window */
 # ptkdb.toplevel.frame1.text.font: fixed            /* Eval Expression Results Window */
@@ -90,7 +82,7 @@ package DB;
 # the DB:: package that is required to be in a Devel/
 # subdir of a directory in the @INC set.  
 #
-package Devel::tcltkdb ;
+package Devel::tcltkdb;
 
 
 =head1 NAME
@@ -130,7 +122,7 @@ To debug a script using tcltkdb invoke perl like this:
  $ENV{'PTKDB_BRKPT_COLOR'} (Defaults to Red). Clicking on the number
  again will remove the breakpoint.  If you disable the breakpoint with
  the controls on the BrkPt notebook page the color will change to
- $ENV{'PTKDB_DISABLEDBRKPT_COLOR'}(Defaults to Green).
+ $ENV{'PTKDB_DISABLEDBRKPT_COLOR'} (Defaults to Green).
 
 =item Cursor Motion
 
@@ -364,15 +356,7 @@ fonts.
     */
 
     ptkdb.frame*font: fixed                           /* Menu Bar */
-    ptkdb.frame.menubutton.font: fixed                /* File menu */
     ptkdb.frame2.frame1.rotext.font: fixed            /* Code Pane */
-
-    ptkdb.notebook.subspage*font: fixed               /* Subroutine Notebook Page */
-    ptkdb.notebook.brkptspage*entry.font: fixed       /* Delete Breakpoint Buttons */
-    ptkdb.notebook.brkptspage*button.font: fixed      /* Breakpoint Expression Entries */
-    ptkdb.notebook.brkptspage*button1.font: fixed     /* Breakpoint Expression Entries */
-    ptkdb.notebook.brkptspage*checkbutton.font: fixed /* Breakpoint Checkbuttons */
-    ptkdb.notebook.brkptspage*label.font: fixed       /* Breakpoint Checkbuttons */
 
     ptkdb.toplevel.frame.textundo.font: fixed         /* Eval Expression Entry Window */
     ptkdb.toplevel.frame1.text.font: fixed            /* Eval Expression Results Window */
@@ -573,7 +557,6 @@ Matthew Persico    For suggestions, and beta testing.
 =cut
 
 use Data::Dumper;
-use Config;
 
 use vars qw(@dbline);
 
@@ -584,32 +567,7 @@ sub BEGIN {
  $DB::subroutine_depth = 0 ; # our subroutine depth counter
  $DB::step_over_depth = -1 ;
 
-   #
-   # the bindings and font specs for these operations have been placed here
-   # to make them accessible to people who might want to customize the 
-   # operations.  REF The 'bind.html' file, included in the perlTk FAQ has
-   # a fairly good explanation of the binding syntax.  
-   # 
-
-   #
-   # These lists of key bindings will be applied
-   # to the "Step In", "Step Out", "Return" Commands
-   #
-
- @Devel::tcltkdb::step_in_keys = ( '<Shift-F9>', '<Alt-s>', '<Button-3>' ) ; # step into a subroutine
- @Devel::tcltkdb::step_over_keys = ( '<F9>', '<Alt-n>', '<Shift-Button-3>' ) ; # step over a subroutine
- @Devel::tcltkdb::return_keys   = ( '<Alt-u>', '<Control-Button-3>' ) ; # return from a subroutine
- @Devel::tcltkdb::toggle_breakpt_keys = ( '<Alt-b>' ) ; # set or unset a breakpoint
-
    # Fonts used in the displays
-
-   #
-   # NOTE:   The environmental variable syntax here works like this:
-   # $ENV{'NAME'} accesses the environmental variable "NAME"
-   #
-   # $ENV{'NAME'} || 'string' results in  $ENV{'NAME'} or 'string' if  $ENV{'NAME'} is not defined.  
-   #
-   #
 
  @Devel::tcltkdb::button_font = $ENV{'PTKDB_BUTTON_FONT'} ? ( "-font" => $ENV{'PTKDB_CODE_FONT'} ) : () ; # font for buttons
  @Devel::tcltkdb::code_text_font = $ENV{'PTKDB_CODE_FONT'} ? ( "-font" => $ENV{'PTKDB_CODE_FONT'} ) : () ;
@@ -724,11 +682,7 @@ sub brkonsub_regex {
 # Run files provided by the user
 #
 sub do_user_init_files {
-
-    my @cf = grep {-e} ("$Config{'installprivlib'}/Devel/ptkdbrc", 
-	(exists $ENV{'HOME'}?("$ENV{'HOME'}/.ptkdbrc"):()),
-	".ptkdbrc");
-    for (@cf) {
+    for (grep {-e} ( (exists $ENV{'HOME'}?("$ENV{'HOME'}/.ptkdbrc"):()), ".ptkdbrc")) {
 	do $_;
 	if ($@) {
 	    print STDERR "init file $_ failed: $@\n" ;
@@ -781,25 +735,20 @@ sub setup_main_window {
   $self->{main_window} = $self->{int}->mainwindow();
   $self->{main_window}->geometry($ENV{'PTKDB_GEOMETRY'} || "800x600") ;
 
-  $self->setup_options() ; # must be done after MainWindow and before other frames are setup
-
   $self->{main_window}->bind('<Control-c>', \&DB::dbint_handler) ;
 
   #
   # Bind our 'quit' routine to a close command from the window manager (Alt-F4) 
   # 
-  $self->{main_window}->protocol('WM_DELETE_WINDOW', sub { $self->close_ptkdb_window() ; } ) ;
+  $self->{main_window}->protocol('WM_DELETE_WINDOW', sub { $self->close_ptkdb_window(); } );
 
   # Menu bar
-
-  $self->setup_menu_bar() ;
+  $self->setup_menu_bar();
 
   #
   # setup Frames
-  #
   # Setup our Code, Data, and breakpoints
-
-  $self->setup_frames() ;
+  $self->setup_frames();
 
 }
 
@@ -908,12 +857,12 @@ sub setup_menu_bar {
   my ($self) = @_;
 
   my $mw = $self->{main_window} ;
+  my $int = $mw->interp;
 
-  my $mb = $self->{menu_bar} = $mw->Frame(qw/-relief raised -borderwidth 1/)->pack(qw/-side top -fill x/);
 
   # file menu in menu bar
 
-  my $items = [ [ 'command' => 'About...', -command => sub { $self->DoAbout() ; } ],
+  my $items1 = [ [ 'command' => 'About...', -command => sub { $self->DoAbout() ; } ],
 						 [ 'command' => 'Bug Report...', -command => 'puts "bugreport TBD"' ],
              "-",
 
@@ -949,7 +898,7 @@ sub setup_menu_bar {
              [ 'command' => 'Quit...', -accelerator => 'Alt+Q',
                -underline => 0,
                -command => sub { $self->DoQuit } ]
-             ] ;
+             ];
 
 
   $mw->bind('<Alt-g>' =>  sub { $self->GotoLine() ; }) ;
@@ -958,10 +907,6 @@ sub setup_menu_bar {
   $mw->bind('<Alt-q>' => sub { $self->{'event'} = 'quit' } ) ;
   $mw->bind('<Alt-w>' => sub { $self->close_ptkdb_window ; }) ;
 
-  $self->{file_menu_button} = $mb->Menubutton(-text => 'File',
-				  -underline => 0,
-				  -menuitems => $items
-		      )->pack(qw(-side left -anchor nw -padx 2));
 
   # Control Menu
 
@@ -974,13 +919,11 @@ sub setup_menu_bar {
                         $DB::window->{'event'} = 'step' ; 
 		    } ;
 
-
   my $stepInSub = sub { 
                       $DB::step_over_depth = -1 ; 
                       $DB::single = 1 ; 
                       $DB::window->{'event'} = 'step' ; 
 		  };
-
 
   my $returnSub =  sub { 
       &DB::SetStepOverBreakPoint(-1) ;
@@ -988,14 +931,14 @@ sub setup_menu_bar {
   };
 
 
-  $items = [ [ 'command' => 'Run', -accelerator => 'Alt+r', -underline => 0, -command => $runSub ],
+  my $items2 = [ [ 'command' => 'Run', -accelerator => 'Alt+r', -underline => 0, -command => $runSub ],
              [ 'command' => 'Run To Here', -accelerator => 'Alt+t', -underline => 5, -command => $runToSub ],
              '-',
              [ 'command' =>  'Set Breakpoint', -underline => 4, -command => sub { $self->SetBreakPoint ; }, -accelerator => 'Ctrl-b' ],
              [ 'command' => 'Clear Breakpoint', -command => sub { $self->UnsetBreakPoint } ],
              [ 'command' => 'Clear All Breakpoints', -underline => 6, -command => sub {     
-             $DB::window->removeAllBreakpoints($DB::window->{current_file}) ;
-               &DB::clearalldblines() ;
+             $DB::window->removeAllBreakpoints($DB::window->{current_file});
+               &DB::clearalldblines();
              } ],
              '-',
              [ 'command' => 'Step Over', -accelerator => 'Alt+N', -underline => 0, -command => $stepOverSub ],
@@ -1007,30 +950,28 @@ sub setup_menu_bar {
              [ 'checkbutton' => 'Stop On Warning', -variable => \$DB::tcltkdb::stop_on_warning, -command => \&set_stop_on_warning ]
                ] ; # end of control menu items
 
-  $self->{control_menu_button} = $mb->Menubutton(-text => 'Control',
-			 -underline => 0, -menuitems => $items,
-		 )->pack(-side =>, 'left', -padx => 2) ;
-
-
   $mw->bind('<Alt-r>' => $runSub) ;
   $mw->bind('<Alt-t>', $runToSub) ;
-  $mw->bind('<Control-b>', sub { $self->SetBreakPoint ; }) ;
+  $mw->bind('<Control-b>', sub { $self->SetBreakPoint ; });
 
-  for( @Devel::tcltkdb::step_over_keys ) {
-    $mw->bind($_ => $stepOverSub );
+  # step over a subroutine
+  for ('<F9>', '<Alt-n>', '<Shift-Button-3>') {
+    $mw->bind($_ => $stepOverSub);
   }
 
-  for( @Devel::tcltkdb::step_in_keys ) {
+  # keys for step into a subroutine 
+  for ('<Shift-F9>', '<Alt-s>', '<Button-3>') {
     $mw->bind($_ => $stepInSub );
   }
 
-  for( @Devel::tcltkdb::return_keys ) {
+  # return from a subroutine
+  for ('<Alt-u>', '<Control-Button-3>') {
     $mw->bind($_ => $returnSub );
   }
 
   # Data Menu
 
-  $items = [ [ 'command' => 'Enter Expression', -accelerator => 'Alt+E', -command => sub { $self->EnterExpr() } ],
+  my $items3 = [ [ 'command' => 'Enter Expression', -accelerator => 'Alt+E', -command => sub { $self->EnterExpr() } ],
              [ 'command' => 'Delete Expression', -accelerator => 'Ctrl+D', -command => sub { $self->deleteExpr() } ],
              [ 'command' => 'Delete All Expressions',  -command => sub { 
                                        $self->deleteAllExprs() ;
@@ -1038,28 +979,11 @@ sub setup_menu_bar {
                                      } ],
              '-',
              [ 'command' => 'Expression Eval Window...', -accelerator => 'F8', -command => sub { $self->setupEvalWindow() ; } ],
-              ] ;
-
-
-  $self->{data_menu_button} = $mb->Menubutton(-text => 'Data', -menuitems => $items,
-                                              -underline => 0,
-                                              )->pack(-side => 'left', -padx => 2) ;
+	  ];
 
   $mw->bind('<Alt-e>' => sub { $self->EnterExpr() } ) ;
   $mw->bind('<Control-d>' => sub { $self->deleteExpr() } );
   $mw->bind('<F8>', sub { $self->setupEvalWindow() ; }) ;
-  #
-  # Stack menu
-  #
-  $self->{stack_menu} = $mb->Menubutton(-text => 'Stack', -underline => 2,
-                                        )->pack(-side => 'left', -padx => 2) ;
-
-  #
-  # Bookmarks menu
-  #
-  $self->{bookmarks_menu} = $mb->Menubutton(qw/-text Bookmarks -underline 0/)
-  	->pack(-side => 'left', -padx => 2) ;
-  $self->setup_bookmarks_menu() ;
 
   #
   # Windows Menu
@@ -1068,20 +992,37 @@ sub setup_menu_bar {
   my $csub = sub { $self->{'quick_entry'}->focus() };
   my $dsub = sub { $self->{'entry'}->focus() };
 
-  $items = [ [ 'command' => 'Code Pane', -accelerator => 'Alt+0', -command => $bsub ],
+  my $items4 = [ [ 'command' => 'Code Pane', -accelerator => 'Alt+0', -command => $bsub ],
              [ 'command' => 'Quick Entry', -accelerator => 'F9', -command => $csub ],
              [ 'command' => 'Expr Entry', -accelerator => 'F11', -command => $dsub ]
            ];
-
-  $mb->Menubutton(-text => 'Windows', -menuitems => $items)->pack(-side => 'left', -padx => 2);
 
   $mw->bind('<Alt-0>', $bsub);
   $mw->bind('<F9>', $csub);
   $mw->bind('<F11>', $dsub);
 
+  my $menu = $mw->Menu(-menuitems => [
+          [Cascade=>'File', -tearoff => 0, -underline=>0, -menuitems=>$items1],
+          [Cascade=>'Control', -tearoff=>0, -underline=>0, -menuitems => $items2],
+	  [Cascade=>'Data', -tearoff=>0, -menuitems => $items3, -underline => 0],
+          [Cascade=>'Stack', -tearoff=>0, -underline => 2],
+          [Cascade=>'Bookmarks', -tearoff=>0, -underline=>0],
+	  [Cascade=>'Windows', -tearoff=>0, -menuitems => $items4]
+      ]);
+  #
+  # Stack menu
+  $self->{stack_menu} = $int->widget($menu->entrycget(4,'-menu'),'Menubutton');
+  #
+  # Bookmarks menu
+  $self->{bookmarks_menu} = $int->widget($menu->entrycget(5,'-menu'),'Menubutton');
+
+  $self->setup_bookmarks_menu();
+
+  $mw->config(-menu=>$menu);
+
   #
   # Bar for some popular controls
-  my $bb = $self->{button_bar} = $mw->Frame()->pack(-side => 'top');
+  my $bb = $mw->Frame()->pack(-side => 'top');
 
   $bb->Button(-text => "Step In", @Devel::tcltkdb::button_font,
                -command => $stepInSub) ->pack(-side => 'left');
@@ -1171,8 +1112,8 @@ sub add_bookmark_items {
   for( @items ) {
     my $item = $_ ;
     $menu->command( -label => $_,
-                    -command => sub { $self->bookmark_cmd($item) }) ;
-    push @{$self->{'bookmarks'}}, $item ;
+                    -command => sub { $self->bookmark_cmd($item) });
+    push @{$self->{'bookmarks'}}, $item;
   }
 } # end of add_bookmark_item
 
@@ -1182,24 +1123,20 @@ sub add_bookmark_items {
 sub add_bookmark {
   my($self) = @_ ;
 
-  my $line = $self->get_lineno() ;
-  my $fname = $self->{'current_file'} ;
-  $self->add_bookmark_items("$fname:$line") ;
+  my $line = $self->get_lineno();
+  my $fname = $self->{'current_file'};
+  $self->add_bookmark_items("$fname:$line");
 
 } # end of add_bookmark
 
 #
-# Command executed when someone selects
-# a bookmark
+# Command executed when someone selects a bookmark
 #
 sub bookmark_cmd {
   my ($self, $item) = @_ ;
-
   $item =~ /(.*):(\d+)$/ ;
-
   $self->set_file($1,$2) ;
-
-} # end of bookmark_cmd
+}
 
 sub save_bookmarks {
   my($self, $pathName) = @_ ;
@@ -1208,12 +1145,12 @@ sub save_bookmarks {
 
   eval {
     open F, ">$pathName" || die "open failed" ;
-    my $d = Data::Dumper->new([ $self->{'bookmarks'} ], 
-                              [  'ptkdb_bookmarks' ]) ;
-    $d->Indent(2) ; # make it more editable for people  
+    my $d = Data::Dumper->new([ $self->{'bookmarks'} ],
+                              [  'ptkdb_bookmarks' ]);
+    $d->Indent(2) ; # make it more editable for people
 
-    print F $d->Dump() || die "outputing bookmarks failed" ;
-    close(F) ;
+    print F $d->Dump() || die "outputing bookmarks failed";
+    close(F);
   };
 
   if ($@) {
@@ -1525,10 +1462,8 @@ sub setup_breakpts_page {
   my ($self) = @_ ;
 
   $self->{'notebook'}->_insertEnd("brkptspage", -text => "BrkPts") ;
-  #$self->{'breakpts_page'} = $self->{int}->widget($self->{'notebook'}->getframe("brkptspage"),'BWNoteBook');
-  $self->{'breakpts_page'} = $self->{'notebook'}->getframe("brkptspage");
 
-  my $sw = $self->{'breakpts_page'}->ScrolledWindow()->pack(qw(-side top -fill both -expand  1));
+  my $sw = $self->{'notebook'}->getframe("brkptspage")->ScrolledWindow()->pack(qw(-side top -fill both -expand  1));
 
   $self->{'breakpts_table'} = $sw->ScrollableFrame();
   $sw->setwidget($self->{'breakpts_table'});
@@ -1541,8 +1476,8 @@ sub setup_frames {
   my ($self) = @_;
   my $mw = $self->{'main_window'};
 
-  $mw->update; # force geometry manager to map main_window
-  my $frm = $mw->Frame(-width => $mw->reqwidth()); # frame for our code pane and search controls
+  my $pw = $mw->Panedwindow()->pack(qw/-side left -fill both -expand 1/);
+  my $frm = $pw->Frame->pack(qw/-side top -fill both -expand 1/); # frame for our code pane and search controls
 
   $self->setup_search_panel($frm);
 
@@ -1551,29 +1486,24 @@ sub setup_frames {
   #
   my $txt = $frm->Scrolled('ROText', -wrap => "none",
 		 @Devel::tcltkdb::code_text_font
-	   );
+	   )->pack(qw/-side top -fill both -expand 1/);
   $self->{'text'} = $txt->Subwidget;
 
-  $frm->packPropagate(0);
-  $txt->packPropagate(0);
-
-  $frm->pack(qw/-side left -fill both -expand 1/);
-  $txt->pack(qw(-side left -fill both -expand 1));
-
-  $self->configure_text() ;
+  $self->configure_text();
 
   #
   # Notebook
   #
 
-  my $nb = $self->{'notebook'} = $mw->BWNoteBook() ;
-  $nb->pack(qw/-side left -fill both -expand 1/);
+  my $nb = $self->{'notebook'} = $pw->BWNoteBook()
+        ->pack(qw/-side left -fill both -expand 1/);
+
+  $pw->add($frm, $nb);
 
   #
   # a widget for the data entries
   #
   $nb->_insertEnd("datapage", -text => "Exprs");
-  $nb->see("datapage");
   $self->{'data_page'} = $nb->getframe("datapage");
 
   #
@@ -1599,7 +1529,7 @@ sub setup_frames {
   #
   my $w_tree = $self->{'data_page'}->Scrolled('Treectrl',-showroot=>1,-showrootbutton=>1)
 		  ->pack(qw/-side top -fill both -expand 1/);
-  $self->{data_list0} = [$w_tree->Subwidget, $w_tree->columnCreate(-text=>'qwerty')];
+  $self->{data_list0} = [$w_tree->Subwidget, $w_tree->columnCreate()];
   $w_tree->elementCreate('foo','text');
   $w_tree->elementCreate('bar','rect',-showfocus=>1);
   $w_tree->styleCreate('st');
@@ -1614,6 +1544,8 @@ sub setup_frames {
   $self->setup_subs_page();
   $self->setup_breakpts_page();
 
+  $nb->_raise("datapage");
+
 } # end of setup_frames
 
 
@@ -1626,13 +1558,13 @@ sub configure_text {
       $self->{'expr_balloon'} = $txt->Balloon();
       $self->{'balloon_expr'} = ' '; # initial expression
 
-  $self->{'expr_ballon_msg'} = ' ';
-  $self->{'expr_balloon'}->attach($txt, -initwait => 300,
-                                  -msg => \$self->{'expr_ballon_msg'},
-                                  -balloonposition => 'mouse',
-                                  -postcommand => \&Devel::tcltkdb::balloon_post,
-                                  -motioncommand => \&Devel::tcltkdb::balloon_motion );
-      }
+      $self->{'expr_ballon_msg'} = ' ';
+      $self->{'expr_balloon'}->attach($txt, -initwait => 300,
+	      -msg => \$self->{'expr_ballon_msg'},
+	      -balloonposition => 'mouse',
+	      -postcommand => \&Devel::tcltkdb::balloon_post,
+	      -motioncommand => \&Devel::tcltkdb::balloon_motion );
+  }
 
     $self->{'quick_dumper'} = new Data::Dumper([]);
     $self->{'quick_dumper'}->Terse(1);
@@ -1648,18 +1580,18 @@ sub configure_text {
   #  'breakdisabledLine'  Format applied to line numbers were a disabled breakpoint is set
   #  'search_tag'         Format applied to text when located by a search.  
 
-  my @stopTagConfig = ( -foreground => 'white', -background  => $mw->optionGet("stopcolor", "background") || $ENV{'PTKDB_STOP_TAG_COLOR'} || 'blue' ) ;
+  my @stopTagConfig = ( -foreground => 'white', -background  => $mw->optionGet("stopcolor", "background") || $ENV{'PTKDB_STOP_TAG_COLOR'} || 'blue' );
 
   my $stopFnt = $mw->optionGet("stopfont", "background") || $ENV{'PTKDB_STOP_TAG_FONT'} ;
   push @stopTagConfig, ( -font => $stopFnt ) if $stopFnt ; # user may not have specified a font, if not, stay with the default
 
-  $txt->tagConfigure('stoppt', @stopTagConfig) ;
-  $txt->tagConfigure('search_tag', "-background" => $mw->optionGet("searchtagcolor", "background") || "green") ;
+  $txt->_tagConfigure('stoppt', @stopTagConfig) ;
+  $txt->_tagConfigure('search_tag', "-background" => $mw->optionGet("searchtagcolor", "background") || "green") ;
 
-  $txt->tagConfigure("breakableLine", -overstrike => 0) ;
-  $txt->tagConfigure("nonbreakableLine", -overstrike => 1) ;
-  $txt->tagConfigure("breaksetLine", -background => $mw->optionGet("breaktagcolor", "background") || $ENV{'PTKDB_BRKPT_COLOR'} || 'red') ;
-  $txt->tagConfigure("breakdisabledLine", -background => $mw->optionGet("disabledbreaktagcolor", "background") || $ENV{'PTKDB_DISABLEDBRKPT_COLOR'} || 'green') ;
+  $txt->_tagConfigure("breakableLine", -overstrike => 0) ;
+  $txt->_tagConfigure("nonbreakableLine", -overstrike => 1) ;
+  $txt->_tagConfigure("breaksetLine", -background => $mw->optionGet("breaktagcolor", "background") || $ENV{'PTKDB_BRKPT_COLOR'} || 'red') ;
+  $txt->_tagConfigure("breakdisabledLine", -background => $mw->optionGet("disabledbreaktagcolor", "background") || $ENV{'PTKDB_DISABLEDBRKPT_COLOR'} || 'green') ;
 
   $txt->tagBind("breakableLine", '<Button-1>', \\'xy', sub {my($ex,$ey)=($_[-2],$_[-1]);$self->set_breakpoint_tag($txt, "\@$ex,$ey", 1 )} );
   $txt->tagBind("breakableLine", '<Shift-Button-1>', \\'xy', sub {my($ex,$ey)=($_[-2],$_[-1]); $self->set_breakpoint_tag($txt, "\@$ex,$ey", 0 )} ) ;
@@ -1673,23 +1605,6 @@ sub configure_text {
 } # end of configure_text
 
 
-sub setup_options {
-  my ($self) = @_ ;
-  my $mw = $self->{main_window} ;
-
-  return unless $mw->can('appname') ;
-  die "human";
-
-  $mw->appname("tcltkdb") ;
-  $mw->optionAdd("stopcolor" => 'cyan', 60 ) ;
-  $mw->optionAdd("stopfont" => 'fixed', 60 ) ;
-  $mw->optionAdd("breaktag" => 'red', 60 ) ;
-  $mw->optionAdd("searchtagcolor" => 'green') ;
-
-  $mw->optionClear ; #  necessary to reload xresources
-
-} # end of setup_options
-
 sub DoAlert {
   my($self, $msg, $title) = @_ ;
 
@@ -1698,10 +1613,9 @@ sub DoAlert {
     $dlg->destroy;
   };
 
-  $dlg->Label( -text => $msg )->pack( -side => 'top' ) ;
-
-  $dlg->Button( -text => "Okay", -command => $okaySub )->pack( -side => 'top' )->focus   ;
-  $dlg->bind('<Return>', $okaySub) ;
+  $dlg->Label(-text => $msg )->pack( -side => 'top' ) ;
+  $dlg->Button(-text => "Okay", -command => $okaySub )->pack(-side => 'top')->focus;
+  $dlg->bind('<Return>', $okaySub);
 
 } # end of DoAlert
 
@@ -2278,9 +2192,8 @@ sub set_file {
 #
 sub get_lineno {
   my ($self) = @_ ; 
-  my ($info) ;
 
-  $info = $self->{'text'}->index('insert') ; # get the location for the insertion point
+  my $info = $self->{'text'}->index('insert'); # get the location for the insertion point
   $info =~ s/\..*$/\.0/ ;
 
   return int $info ;
@@ -2589,15 +2502,14 @@ sub restoreStateFile {
 
 sub updateEvalWindow {
   my ($self, @result) = @_ ;
-  my ($leng, $str, $d) ;
+  my ($leng, $str) = (0,'');
 
-  $leng = 0 ;
   for (@result) {
     if( $self->{hexdump_evals} ) {
       # eventually put hex dumper code in here
       $self->{eval_results}->insert('end', hexDump($_)) ;
     } else {
-      $d = Data::Dumper->new([$_]);
+      my $d = Data::Dumper->new([$_]);
       $d->Indent($Devel::tcltkdb::eval_dump_indent);
       $d->Terse(1);
       $str = $d->Dump($_);
@@ -2618,27 +2530,26 @@ sub printablestr {
 ## hex dump utility function
 ##
 sub hexDump {
-    my(@retList) ;
-    my($width) = 8 ;
-    my($offset) ;
-    my($len, $fmt, $n, @elems) ;
+    my @retList;
+    my $width = 8;
+    my $offset = 0;
 
-    for( @_ ) {
-	my($str) ;
-	$len = length $_ ;
+    for (@_) {
+	my $str = '';
+	my $len = length $_ ;
 
 	while($len) {
-	    $n = $len >= $width ? $width : $len ;
+	    my $n = $len >= $width ? $width : $len ;
 
-	    $fmt = "\n%04X  " . ("%02X " x $n ) . ( '   ' x ($width - $n) ) . " %s" ;
-	    @elems = map ord, split //, (substr $_, $offset, $n) ;
+	    my $fmt = "\n%04X  " . ("%02X " x $n ) . ( '   ' x ($width - $n) ) . " %s" ;
+	    my @elems = map ord, split //, (substr $_, $offset, $n) ;
 	    $str .= sprintf($fmt, $offset, @elems, printablestr(substr $_, $offset, $n)) ;
-	    $offset += $width ;
+	    $offset += $width;
 
-	    $len -= $n ;
+	    $len -= $n;
 	} # while
 
-	push @retList, $str ;
+	push @retList, $str;
     } # for
 
     return $retList[0] unless wantarray ;
@@ -2647,44 +2558,42 @@ sub hexDump {
 
 
 sub setupEvalWindow {
-  my($self) = @_ ;
-  my($top, $dismissSub) ;
-  my $f ;
+  my($self) = @_;
   $self->{eval_window}->focus(), return if exists $self->{eval_window} ; # already running this window?
 
-  $top = $self->{main_window}->Toplevel(-title => "Evaluate Expressions...") ;
-  $self->{eval_window} = $top ;
-  $self->{eval_text} = $top->Scrolled('TextUndo',
-                                    @Devel::tcltkdb::eval_text_font,
-                                      -width => 50,
-                                      -height => 10,
-                                      -wrap => "none",
-                                      )->packAdjust(-side => 'top', -fill => 'both', -expand => 1) ;
+  my $top = $self->{main_window}->Toplevel(-title => "Evaluate Expressions...");
+  $self->{eval_window} = $top;
+  $self->{eval_text} = $top->Scrolled('Text',
+		@Devel::tcltkdb::eval_text_font,
+		  -width => 50,
+		  -height => 10,
+		  -wrap => "none",
+	  )->pack(qw/-side top -fill both -expand 1/);
 
-  $self->{eval_text}->insert('end', $self->{eval_saved_text}) if exists $self->{eval_saved_text} && defined $self->{eval_saved_text} ;
+  $self->{eval_text}->insert('end', $self->{eval_saved_text}) if exists $self->{eval_saved_text} && defined $self->{eval_saved_text};
 
-  $top->Label(-text, "Results:")->pack(-side => 'top', -fill => 'both', -expand => 'n') ;
+  $top->Label(-text => "Results:")->pack(qw/-side top -fill both -expand n/);
 
   $self->{eval_results} = $top->Scrolled('Text',
-                                         -width => 50,
-                                         -height => 10,
-                                         -wrap => "none",
-                                       @Devel::tcltkdb::eval_text_font
-                                         )->pack(-side => 'top', -fill => 'both', -expand => 1) ;
+		 -width => 50,
+		 -height => 10,
+		 -wrap => "none",
+	       @Devel::tcltkdb::eval_text_font
+	  )->pack(qw/-side top -fill both -expand 1/);
 
   my $btn = $top->Button(-text => 'Eval...', -command => sub { $DB::window->{event} = 'reeval' ; }
-                         )->pack(-side => 'left', -fill => 'x', -expand => 1) ;
+	 )->pack(-side => 'left', -fill => 'x', -expand => 1);
 
-  $dismissSub = sub { 
+  my $dismissSub = sub { 
     $self->{eval_saved_text} = $self->{eval_text}->get('0.0', 'end') ;
     $self->{eval_window}->destroy ;
     delete $self->{eval_window} ;
-  } ;
+  };
 
   $top->protocol('WM_DELETE_WINDOW', $dismissSub ) ;
 
   $top->Button(-text => 'Clear Eval', -command => sub { $self->{eval_text}->delete('0.0', 'end') }
-               )->pack(-side => 'left', -fill => 'x', -expand => 1) ;
+	   )->pack(-side => 'left', -fill => 'x', -expand => 1);
 
   $top->Button(-text => 'Clear Results', -command => sub { $self->{eval_results}->delete('0.0', 'end') }
                )->pack(-side => 'left', -fill => 'x', -expand => 1) ;
@@ -2747,7 +2656,7 @@ __STR__
 sub SetBreakPoint {
   my ($self, $isTemp) = @_ ;
   my $dbw = $DB::window ;
-  my $lineno = $dbw->get_lineno() ;
+  my $lineno = $dbw->get_lineno();
   my $expr = $dbw->clear_entry_text() ;
   local($^W) = 0 ;
 
@@ -2770,7 +2679,7 @@ sub SetBreakPoint {
 
 sub UnsetBreakPoint {
   my ($self) = @_ ;
-  my $lineno = $self->get_lineno() ;
+  my $lineno = $self->get_lineno();
 
   $self->removeBreakpoint($DB::window->{current_file}, $lineno) ;
 } # end of UnsetBreakPoint
@@ -2799,7 +2708,7 @@ sub balloon_motion {
   # Post an event that will cause us to put up a popup
   #
 
-  if( $txt2->tagRanges('sel') ) { # check to see if 'sel' tag exists (return undef value)
+  if ($txt2->_tagRangesSel) { # check to see if 'sel' tag exists (return undef value)
     $data = $txt2->get("sel.first", "sel.last") ; # get the text between the 'first' and 'last' point of the sel (selection) tag
   }
   else {
@@ -3172,18 +3081,16 @@ sub dbint_handler {
 } # end of dbint_handler
 
 #
-# Do first time initialization at the startup
-# of DB::DB
+# Do first time initialization at the startup of DB::DB
 #
+my $isInitialized=0;
 sub Initialize {
   my ($fName) = @_ ;
-  return if $DB::tcltkdb::isInitialized ;
- $DB::tcltkdb::isInitialized = 1 ;
+  $isInitialized = 1;
 
- $DB::window = new Devel::tcltkdb ;
+ $DB::window = new Devel::tcltkdb;
 
- $DB::window->do_user_init_files() ;
-
+ $DB::window->do_user_init_files();
 
  $DB::dbint_handler_save = $SIG{'INT'} unless $DB::sigint_disable ; # saves the old handler
   $SIG{'INT'} = "DB::dbint_handler" unless $DB::sigint_disable ;
@@ -3447,7 +3354,7 @@ sub DB {
   $DB::save_err = $@ ; # save value of $@
    my ($package, $filename, $line) = caller ;
 
-   unless( $DB::tcltkdb::isInitialized ) {
+   unless( $isInitialized ) {
      return if( $filename ne $0 ) ; # not in our target file
      &DB::Initialize($filename) ;
    }
@@ -3676,6 +3583,10 @@ sub DB {
 # - no more need for sub fixExprPath
 # - $Devel::tcltkdb::pathSepReplacement = "\0x01" ;
 # - $Devel::tcltkdb::pathSep = '\x00' ;
+# - removed sub setup_options
+# - modernized menus
+# - no more use Config and user config file from "$Config{'installprivlib'}/Devel/ptkdbrc", 
+#   only config in home dir etc do.
 #
 # Revision 1.15  2004/03/31 02:08:40  aepage
 # fixes for various lacks of backwards compatiblity in Tk804
