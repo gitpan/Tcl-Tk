@@ -1,12 +1,11 @@
 BEGIN { $^W = 1; $| = 1;}
 use strict;
 use Test;
-use Tcl::Tk qw/:perlTk/;
+use Tcl::Tk;
 
 
-my $mw  = MainWindow->new();
+my $mw  = Tcl::Tk::MainWindow->new();
 $mw->geometry('+100+100');
-
 
 if (!$mw->interp->pkg_require('Img')) {
     print "1..0 # skip: no Img extension available ($@)\n";
@@ -18,9 +17,8 @@ plan tests => (2*(7 * 5) + 2);
 my @files = ();
 
 my $row = 0;
-foreach my $leaf('Tk.xbm','Xcamel.gif')
- {
-  my $file = "./t/$leaf"; #Tk->findINC($leaf);
+foreach my $leaf('Tk.xbm','Xcamel.gif') {
+  my $file = "./t/$leaf";
   my $src = $mw->Photo(-file => $file);
   ok(defined($src),1," Cannot load $file");
   my $kind = 'Initial';
@@ -29,8 +27,7 @@ foreach my $leaf('Tk.xbm','Xcamel.gif')
   $mw->Label(-background => 'white',-image => $src)->grid(-row => $row+1, -column => $col++);
   $mw->update;
 
-  foreach $kind (qw(bmp gif png jpeg tiff xbm xpm))  # ($src->formats)
-   {
+  foreach $kind (qw(bmp gif png jpeg tiff xbm xpm)) {
     my $f = lc("t/test.$kind");
     my $p = $f;
     push(@files,$f);
@@ -46,15 +43,14 @@ foreach my $leaf('Tk.xbm','Xcamel.gif')
     $mw->Label(-text  => $kind)->grid(-row => $row, -column => $col);
     $mw->Label(-background => 'white', -image => $new)->grid(-row => $row+1, -column => $col++);
     $mw->update;
-   }
- $row += 2;
+  }
+  $row += 2;
 }
 
 $mw->after(1000,sub{$mw->destroy});
-MainLoop;
+Tcl::Tk::MainLoop;
 
-foreach (@files)
- {
+foreach (@files) {
   unlink($_) if -f $_;
- }
+}
 

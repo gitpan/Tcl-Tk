@@ -1,17 +1,15 @@
-# -*- perl -*-
 BEGIN { $|=1; $^W=1; }
 use strict;
 use Test;
 
-BEGIN
-  {
+BEGIN {
    plan test => 7;
-  };
+};
 
-use Tcl::Tk qw/:perlTk/;
+use Tcl::Tk;
 
 my $mw;
-eval {$mw = MainWindow->new();};
+eval {$mw = Tcl::Tk::MainWindow->new();};
 ok($@, "", "can't create MainWindow");
 ok(Tcl::Tk::Exists($mw), 1, "MainWindow creation failed");
 
@@ -19,12 +17,11 @@ ok(Tcl::Tk::Exists($mw), 1, "MainWindow creation failed");
 my $menubar = $mw->Frame(-relief => 'raised', -borderwidth => 2)
   ->pack(-fill=>'x');
 
-$menubar->Menubutton(qw/-text File -underline 0 -tearoff 0 -menuitems/ =>
-  [
+$menubar->Menubutton(qw/-text File -underline 0 -tearoff 0 -menuitems/ => [
     [Button => '~Open ...',     -accelerator => 'Control+o'],
     [Button => '~New',          -accelerator => 'Control+n'],
     [Button => '~Save',         -accelerator => 'Control+s'],
-     [Cascade => '~PerlTk manuals', -tearoff=>0, -menuitems =>
+    [Cascade => '~PerlTk manuals', -tearoff=>0, -menuitems =>
        [
          [Button => '~Overview',          ],
          [Button => '~Standard options',  ],
@@ -36,29 +33,26 @@ $menubar->Menubutton(qw/-text File -underline 0 -tearoff 0 -menuitems/ =>
          [Button => '~Callbacks',         ],
          [Button => '~Events',            ],
        ]
-     ],
+    ],
     [Button => 'Save ~As ...', ],
     [Separator => ''],
     [Button => '~Properties ...',  ],
     [Separator => ''],
     [Button => '~Quit',         -accelerator => 'ESC', -command=>sub {print "Quit\n"}],
-  ])->pack(-side=>'left');
+])->pack(-side=>'left');
 
-$menubar->Menubutton(qw/-text Insert -underline 0 -tearoff 0 -menuitems/ =>
-  [
+$menubar->Menubutton(qw/-text Insert -underline 0 -tearoff 0 -menuitems/ => [
     [Button => '~Before',     ],
     [Button => '~After',      ],
     [Button => '~Sub-widget', ],
-  ])->pack(-side=>'left');
+])->pack(-side=>'left');
 
 
-if (0) { $mw->Menu(-menuitems=>
-  [
+my $menu = $mw->Menu(-menuitems=> [
     [Button => '~Open ...',     -accelerator => 'Control+o'],
     [Button => '~New',          -accelerator => 'Control+n'],
     [Button => '~Save',         -accelerator => 'Control+s'],
-     [Cascade => '~PerlTk manuals', -tearoff=>0, -menuitems =>
-       [
+    [Cascade => '~PerlTk manuals', -tearoff=>0, -menuitems => [
          [Button => '~Overview',          ],
          [Button => '~Standard options',  ],
          [Button => 'Option ~handling',   ],
@@ -69,14 +63,13 @@ if (0) { $mw->Menu(-menuitems=>
          [Button => '~Callbacks',         ],
          [Button => '~Events',            ],
        ]
-     ],
+    ],
     [Button => 'Save ~As ...', ],
     [Separator => ''],
     [Button => '~Properties ...',  ],
     [Separator => ''],
     [Button => '~Quit',         -accelerator => 'ESC', -command=>sub {print "Quit\n"}],
-  ]);
-}
+]);
 
 my $lab = $mw->Label(-text => "Ring the bell!")->pack;
 $mw->bell;
@@ -85,13 +78,16 @@ $mw->deiconify;
 $mw->update;
 $mw->raise;
 my @kids = $mw->children;
-ok(@kids, 2);
-my $txt = $kids[1]->cget("-text");
+ok(@kids, 3);
+my $txt = $kids[2]->cget("-text");
 ok($txt , "Ring the bell!");
 
 $mw->configure(-title=>'new title',-cursor=>'star');
+$mw->geometry("=800x600-0-0");
 ok($mw->cget('-title'), 'new title');
 ok($mw->cget('-cursor'), 'star');
 
+$mw->config(-menu=>$menu);
+
 $mw->after(3000,sub{$mw->destroy});
-MainLoop;
+Tcl::Tk::MainLoop;

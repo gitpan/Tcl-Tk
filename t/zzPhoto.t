@@ -1,9 +1,9 @@
 BEGIN { $|=1; $^W=1; }
 use strict;
 use Test;
-use Tcl::Tk qw/:perlTk/;
+use Tcl::Tk;
 
-my $mw = MainWindow->new;
+my $mw = Tcl::Tk::MainWindow->new;
 
 if (!$mw->interp->pkg_require('Img')) {
     print "1..0 # skip: no Img extension available\n";

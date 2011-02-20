@@ -38,7 +38,7 @@ EOS
 unless ($res =~ /^ok2/m) {
   die <<EOS;
 
-Your Tk installation fails to find snit package.
+Your Tk installation fails to find 'snit' package.
 Make sure that it is installed within your Tcl/Tk.
 EOS
 }

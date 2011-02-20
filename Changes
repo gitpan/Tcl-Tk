@@ -1,5 +1,9 @@
 Revision history for Perl extension Tcl::Tk.
 
+1.04	20-feb-2011
+	- t/canvas.t new test file, t/* files improved
+	- demos/tcltkdb.pm moved out into separate module
+
 1.03	19-feb-2011
 	- remove need_tk
 	- for a widget method now could be specified that it returns
